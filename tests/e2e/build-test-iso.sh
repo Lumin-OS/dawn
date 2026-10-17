@@ -61,6 +61,9 @@ move_live_only etc/systemd/system/pacman-init.service usr/lib/systemd/system/pac
 move_live_only etc/systemd/system/etc-pacman.d-gnupg.mount usr/lib/systemd/system/etc-pacman.d-gnupg.mount
 move_live_only etc/systemd/journald.conf.d/volatile-storage.conf usr/lib/systemd/journald.conf.d/volatile-storage.conf
 move_live_only etc/systemd/logind.conf.d/do-not-suspend.conf usr/lib/systemd/logind.conf.d/do-not-suspend.conf
+# Match the real luminos-live ownership of autologin: cleanup removes the
+# package rather than deleting releng's old /etc path separately.
+move_live_only etc/systemd/system/getty@tty1.service.d/autologin.conf usr/lib/systemd/system/getty@tty1.service.d/autologin.conf
 # The enablement link moves too, but as a new relative link: the old one
 # may point into /etc.
 rm "$PROFILE/airootfs/etc/systemd/system/multi-user.target.wants/pacman-init.service"
