@@ -12,6 +12,11 @@ DECISIONS.md.
 
 ## M5 integration status
 
+Implementation PRs: [Dawn #11](https://github.com/Lumin-OS/dawn/pull/11),
+[dotfiles #2](https://github.com/Lumin-OS/dotfiles/pull/2),
+[packaging #3](https://github.com/Lumin-OS/luminos-packages/pull/3), and
+[ISO #4](https://github.com/Lumin-OS/LuminOS/pull/4).
+
 The `m5-iso-integration` changes apply the agreed keyboard.lua,
 greetd luminos.toml and start-hyprland contracts, add luminos-live to
 Dawn's offline cleanup, and remove the old /etc autologin deletion.
