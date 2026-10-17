@@ -124,6 +124,17 @@ echo "luminos:!:1::::::" >> "$PROFILE/airootfs/etc/shadow"
 mkdir -p "$PROFILE/airootfs/home/luminos"
 echo 'file_permissions["/home/luminos"]="1000:1000:750"' >> "$PROFILE/profiledef.sh"
 
+# Dawn edits luminos-desktop's config, which the small test ISO stands in
+# for. Preserve greetd's upstream config.toml and give this file its own path.
+mkdir -p "$PROFILE/airootfs/etc/greetd"
+cat > "$PROFILE/airootfs/etc/greetd/luminos.toml" <<'TOML'
+[terminal]
+vt = 1
+[default_session]
+command = "agreety --cmd /bin/bash"
+user = "greeter"
+TOML
+
 # Replaces the live image's own /etc/pacman.conf, which the arch
 # adapter's pacstrap -C reads. mkarchiso copies airootfs/ in before it
 # installs packages, and pacman.conf is a backup file in the pacman

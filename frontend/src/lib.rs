@@ -160,6 +160,16 @@ pub fn apply_branding(app: &AppWindow, branding: branding::Branding) {
     theme.set_product_name(branding.product_name.into());
     theme.set_version_string(branding.version_string.into());
     theme.set_accent(branding.accent_color);
+    theme.set_slides(ModelRc::new(VecModel::from(
+        branding
+            .slides
+            .into_iter()
+            .map(|slide| BrandedSlide {
+                image: slide.image,
+                caption: slide.caption.into(),
+            })
+            .collect::<Vec<_>>(),
+    )));
     theme.set_website(branding.website.into());
     theme.set_support_url(branding.support_url.into());
     theme.set_secure_boot_url(branding.secure_boot_url.into());

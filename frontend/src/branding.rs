@@ -32,6 +32,13 @@ pub struct Branding {
     pub logo: slint::Image,
     pub icon: slint::Image,
     pub welcome_text: String,
+    pub slides: Vec<Slide>,
+}
+
+/// A numbered PNG slide and its optional adjacent .txt caption.
+pub struct Slide {
+    pub image: slint::Image,
+    pub caption: String,
 }
 
 /// `/usr/share/dawn/branding/<name>/` is where a real install looks
@@ -84,7 +91,41 @@ pub fn load(dir: &Path) -> Result<Branding, String> {
         logo,
         icon,
         welcome_text,
+        slides: load_slides(&dir.join("slides"))?,
     })
+}
+
+fn load_slides(dir: &Path) -> Result<Vec<Slide>, String> {
+    if !dir.exists() {
+        return Ok(Vec::new());
+    }
+    let entries =
+        std::fs::read_dir(dir).map_err(|err| format!("could not read {}: {err}", dir.display()))?;
+    let mut paths = Vec::new();
+    for entry in entries {
+        let path = entry.map_err(|err| err.to_string())?.path();
+        if path.extension().is_some_and(|ext| ext == "png") {
+            paths.push(path);
+        }
+    }
+    paths.sort();
+    paths
+        .into_iter()
+        .map(|path| {
+            let caption_path = path.with_extension("txt");
+            let caption = match std::fs::read_to_string(&caption_path) {
+                Ok(text) => text.trim().to_string(),
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => String::new(),
+                Err(err) => {
+                    return Err(format!("could not read {}: {err}", caption_path.display()));
+                }
+            };
+            Ok(Slide {
+                image: load_image(&path)?,
+                caption,
+            })
+        })
+        .collect()
 }
 
 fn load_image(path: &Path) -> Result<slint::Image, String> {
@@ -94,7 +135,7 @@ fn load_image(path: &Path) -> Result<slint::Image, String> {
 
 fn parse_hex_color(value: &str) -> Option<slint::Color> {
     let hex = value.strip_prefix('#')?;
-    if hex.len() != 6 {
+    if hex.len() != 6 || !hex.is_ascii() {
         return None;
     }
     let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
@@ -120,5 +161,6 @@ mod tests {
     fn rejects_a_malformed_hex_color() {
         assert!(parse_hex_color("5b8dee").is_none());
         assert!(parse_hex_color("#5b8d").is_none());
+        assert!(parse_hex_color("#a€bc").is_none());
     }
 }

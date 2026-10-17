@@ -113,7 +113,7 @@ pub enum Action {
     Run(Invocation),
     /// Replaces `path` with `content`, creating any missing parent
     /// directories first: config drop-ins such as
-    /// `/etc/skel/.config/hypr/keyboard.conf` go into directories that
+    /// `/etc/skel/.config/hypr/keyboard.lua` go into directories that
     /// only exist if some package happened to create them.
     WriteFile {
         path: String,
@@ -155,7 +155,7 @@ pub enum Action {
     },
     /// Sets `[table]` in the TOML file at `path` to exactly these string
     /// entries, replacing any table of that name and leaving the rest of
-    /// the file alone. Used for greetd's `config.toml`, which has no
+    /// the file alone. Used for greetd's `luminos.toml`, which has no
     /// drop-in directory.
     SetTomlTable {
         path: String,
@@ -1185,7 +1185,7 @@ mod tests {
     fn real_runner_creates_missing_parent_directories() {
         let dir = unique_temp_dir();
         let path = dir
-            .join("etc/skel/.config/hypr/keyboard.conf")
+            .join("etc/skel/.config/hypr/keyboard.lua")
             .to_str()
             .unwrap()
             .to_string();

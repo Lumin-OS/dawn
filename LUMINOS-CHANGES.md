@@ -10,6 +10,22 @@ from Arch's releng profile, with Calamares and a prebuilt package
 repository. Dawn's own side of each point is in SPEC.md and
 DECISIONS.md.
 
+## M5 integration status
+
+The `m5-iso-integration` changes apply the agreed keyboard.lua,
+greetd luminos.toml and start-hyprland contracts, add luminos-live to
+Dawn's offline cleanup, and remove the old /etc autologin deletion.
+Runtime slides and gettext initialization are implemented. Packaging now
+uses the transferred Lumin-OS/dawn repository and pins its M5 commit.
+
+The live ISO loads luminos-desktop's default Hyprland configuration,
+with Dawn's autostart/window rule on top. The desktop skips idle locking
+when LUMINOS_LIVE=1. The ISO CI smoke test builds the actual packages,
+boots a disposable VM and checks Dawn's window is mapped in Hyprland.
+Real-ISO validation remains pending until that check passes; signing and
+publishing packages remain the release owner's task. Existing installer
+CI still checks online/offline/Secure Boot with its pinned test mirror.
+
 ## luminos-repository
 
 ### `luminos-base` and `luminos-desktop`
@@ -45,9 +61,7 @@ the dependencies below, and the HOOKS as a drop-in in
     `~/.config/hypr/keyboard.lua` with `require("keyboard")`. Hyprland
     0.56 uses `hyprland.lua` whenever it exists and treats
     `hyprland.conf` as legacy. Dawn writes the chosen keyboard layout
-    into `keyboard.lua`, never into `hyprland.lua` itself. (Decided with
-    the user; until M5, Dawn still writes a `keyboard.conf` in the old
-    format. See DECISIONS.md.)
+    into `keyboard.lua`, never into `hyprland.lua` itself. (Implemented in M5; see DECISIONS.md.)
   - Ship a default `/etc/skel/.config/hypr/keyboard.lua` too (for
     example `hl.config({ input = { kb_layout = "us" } })`), so users
     created outside Dawn don't start with a `require` of a missing file.
@@ -66,9 +80,7 @@ the dependencies below, and the HOOKS as a drop-in in
     `/etc/greetd/luminos.toml` on the installed system, with the new
     user and `command = "start-hyprland"`, and keeps everything else in
     the file. Hyprland 0.56 calls starting without `start-hyprland`
-    "strongly discouraged". (Decided with the user; until M5, Dawn still
-    edits `/etc/greetd/config.toml` with `command = "Hyprland"`. See
-    DECISIONS.md.)
+    "strongly discouraged". (Implemented in M5; see DECISIONS.md.)
   - The login screen should use the keyboard layout chosen in Dawn, or
     a password with layout-dependent characters won't work there. Dawn
     writes it where `localectl set-x11-keymap` does,
@@ -214,7 +226,7 @@ below. The ISO builds once luminos-repository has the meta-packages,
   not greetd, but the drop-in moved into `luminos-live`, at
   `/usr/lib/systemd/system/getty@tty1.service.d/autologin.conf`, so
   removing the package removes it. Step 6's deletion of the `/etc` path
-  is now dead code, to drop in M5.*
+  is removed in M5.*
 - **polkit**: the ISO needs `polkit` (a dependency of `luminos-dawn`)
   for pkexec, and the live session must be an active logind session
   (a normal autologin is): Dawn's "Restart now" asks logind to reboot,
@@ -245,8 +257,8 @@ below. The ISO builds once luminos-repository has the meta-packages,
   keep one of them (releng's use `archisosearchuuid=`, LuminOS's
   `archisodevice=UUID=`). Its e2e test boots from a USB stick with
   enough RAM for the copy, to cover this. *Done: LuminOS#3 leaves the
-  boot entries as they are. A gap remains: `grub/loopback.cfg`, for
-  booting the ISO file from another disk, passes none of the three.*
+  boot entries as they are. M5 also recognises `img_dev=`, which `grub/loopback.cfg` uses
+  to identify the disk holding the ISO file.*
 - **Live-only parts**: an offline install copies the whole live image,
   and the ISO enables releng's live-only services from `/etc`; step 6
   removes only some of them. First drop what a desktop live ISO doesn't

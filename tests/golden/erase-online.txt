@@ -48,11 +48,8 @@ write /mnt/target/etc/systemd/zram-generator.conf
     <<< [zram0]
     <<< zram-size = ram / 2
     <<< compression-algorithm = zstd
-write /mnt/target/etc/skel/.config/hypr/keyboard.conf
-    <<< input {
-    <<<     kb_layout = us
-    <<<     kb_variant = 
-    <<< }
+write /mnt/target/etc/skel/.config/hypr/keyboard.lua
+    <<< hl.config({ input = { kb_layout = "us", kb_variant = "" } })
 ==> Step 8: Create the user, lock root, enable sudo
 arch-chroot /mnt/target useradd -m -G wheel -c 'Ada Lovelace' -s /bin/bash ada
 arch-chroot /mnt/target chpasswd

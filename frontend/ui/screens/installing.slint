@@ -5,7 +5,7 @@ import { Theme } from "../theme.slint";
 
 // SPEC.md: "Progress bar, current step, optional branded slideshow,
 // expandable log." Progress and log lines arrive from the backend as
-// they happen. The slideshow is M5's.
+// they happen. Slides are loaded from the branding folder at startup.
 export component InstallingScreen inherits VerticalLayout {
     // 0 until the backend reports its first step.
     in property <int> step-number;
@@ -20,10 +20,18 @@ export component InstallingScreen inherits VerticalLayout {
 
     callback stop();
 
+    private property <int> slide-index: 0;
+    Timer {
+        interval: 8s;
+        running: Theme.slides.length > 1 && !root.show-log && !root.confirm-stop;
+        triggered => { root.slide-index = Math.mod(root.slide-index + 1, Theme.slides.length); }
+    }
+
+
     padding: 32px;
     spacing: 16px;
 
-    Text { text: @tr("Installing"); font-size: 22px; font-weight: 700; horizontal-alignment: center; }
+    Text { text: @tr("Installing"); color: Theme.accent; font-size: 22px; font-weight: 700; horizontal-alignment: center; }
     Text {
         text: step-number == 0 ? @tr("Starting…") : @tr("Step {}: {}", step-number, step-name);
         horizontal-alignment: center;
@@ -62,7 +70,21 @@ export component InstallingScreen inherits VerticalLayout {
         }
     }
 
-    if !show-log: Rectangle { vertical-stretch: 1; }
+    if !show-log: VerticalLayout {
+        vertical-stretch: 1;
+        if Theme.slides.length > 0: Image {
+            source: Theme.slides[root.slide-index].image;
+            image-fit: contain;
+            min-height: 120px;
+            vertical-stretch: 1;
+            accessible-label: @tr("Installation slide");
+        }
+        if Theme.slides.length > 0: Text {
+            text: Theme.slides[root.slide-index].caption;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+    }
 
     if confirm-stop: Rectangle {
         border-radius: 6px;

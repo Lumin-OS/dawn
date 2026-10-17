@@ -37,7 +37,16 @@ yanked = "deny"
 # Wayland client-side-decoration font rendering) is flagged unmaintained
 # with no safe upgrade available yet. Not a vulnerability — tracked, not
 # blocking, until winit's dependency tree moves off it.
-ignore = ["RUSTSEC-2026-0192"]
+# zbus_names, zvariant and zvariant_derive merged into zbus 6. Slint's
+# accessibility stack and Dawn's zbus 5 integration still require them.
+# These report maintenance status, not a vulnerability. Revisit when
+# Slint/accesskit and Dawn move to zbus 6; keep vulnerability checks enabled.
+ignore = [
+    "RUSTSEC-2026-0192",
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
+]
 
 [sources]
 unknown-registry = "deny"

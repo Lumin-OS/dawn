@@ -1,0 +1,1 @@
+Keep your system current with pacman and the LuminOS repository.

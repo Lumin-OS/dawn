@@ -1,0 +1,535 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Dawn 0.1.0\n"
+"POT-Creation-Date: 2026-10-17 22:07+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: frontend/ui/screens/account.slint:29
+msgctxt "AccountScreen"
+msgid "Account"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:31
+msgctxt "AccountScreen"
+msgid "Full name"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:38
+msgctxt "AccountScreen"
+msgid "Username"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:44
+msgctxt "AccountScreen"
+msgid "Hostname"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:50
+msgctxt "AccountScreen"
+msgid "Password"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:57
+msgctxt "AccountScreen"
+msgid "Log in automatically"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:65
+msgctxt "AccountScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/account.slint:68
+msgctxt "AccountScreen"
+msgid "Next"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:38
+msgctxt "DiskScreen"
+msgid "Disk"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:39
+msgctxt "DiskScreen"
+msgid "Choose the disk to install onto. Erase mode wipes it completely."
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:42
+msgctxt "DiskScreen"
+msgid "No disk this PC can install onto was found."
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:82
+msgctxt "DiskScreen"
+msgid "{} — {} GiB"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:85
+msgctxt "DiskScreen"
+msgid "Serial {}"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:86
+msgctxt "DiskScreen"
+msgid "Serial {} — this disk {}"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:96
+msgctxt "DiskScreen"
+msgid "Mode:"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:97
+msgctxt "DiskScreen"
+msgid "Erase"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:98
+msgctxt "DiskScreen"
+msgid "Manual (coming soon)"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:102
+msgctxt "DiskScreen"
+msgid "Set up Secure Boot with {} keys"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:108
+msgctxt "DiskScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/disk.slint:111
+msgctxt "DiskScreen"
+msgid "Next"
+msgstr ""
+
+#: frontend/ui/screens/done.slint:25
+msgctxt "DoneScreen"
+msgid "All done"
+msgstr ""
+
+#: frontend/ui/screens/done.slint:26
+msgctxt "DoneScreen"
+msgid "{} is installed."
+msgstr ""
+
+#: frontend/ui/screens/done.slint:29
+msgctxt "DoneScreen"
+msgid "Remember to switch Secure Boot on in your firmware if it isn't already."
+msgstr ""
+
+#: frontend/ui/screens/done.slint:37
+msgctxt "DoneScreen"
+msgid "Secure Boot isn't set up. You can set it up later with sbctl."
+msgstr ""
+
+#: frontend/ui/screens/done.slint:49
+msgctxt "DoneScreen"
+msgid "How to set up Secure Boot later"
+msgstr ""
+
+#: frontend/ui/screens/done.slint:54
+msgctxt "DoneScreen"
+msgid "Couldn't restart: {}"
+msgstr ""
+
+#: frontend/ui/screens/done.slint:63
+msgctxt "DoneScreen"
+msgid "Keep live session"
+msgstr ""
+
+#: frontend/ui/screens/done.slint:64
+msgctxt "DoneScreen"
+msgid "Restart now"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:29
+msgctxt "ErrorScreen"
+msgid "The install couldn't start"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:29
+msgctxt "ErrorScreen"
+msgid "The install failed at step {}"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:37
+msgctxt "ErrorScreen"
+msgid ""
+"The disk was already changed, so it doesn't hold its old contents any more, "
+"but no working system was installed on it."
+msgstr ""
+
+#: frontend/ui/screens/error.slint:43
+msgctxt "ErrorScreen"
+msgid ""
+"The package repositories couldn't be reached. You can install from this live "
+"image instead, which works without a network."
+msgstr ""
+
+#: frontend/ui/screens/error.slint:55
+msgctxt "ErrorScreen"
+msgid "Last lines of the install log"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:60
+msgctxt "ErrorScreen"
+msgid "Saved the log to {}"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:62
+msgctxt "ErrorScreen"
+msgid "Couldn't save the log: {}"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:69
+msgctxt "ErrorScreen"
+msgid "Quit"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:70
+msgctxt "ErrorScreen"
+msgid "Save log"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:73
+msgctxt "ErrorScreen"
+msgid "Install offline instead"
+msgstr ""
+
+#: frontend/ui/screens/error.slint:76
+msgctxt "ErrorScreen"
+msgid "Retry from start"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:34
+msgctxt "InstallingScreen"
+msgid "Installing"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:36
+msgctxt "InstallingScreen"
+msgid "Starting…"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:36
+msgctxt "InstallingScreen"
+msgid "Step {}: {}"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:41
+msgctxt "InstallingScreen"
+msgid "{}%"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:46
+msgctxt "InstallingScreen"
+msgid "Hide details"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:46
+msgctxt "InstallingScreen"
+msgid "Show details"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:80
+msgctxt "InstallingScreen"
+msgid "Installation slide"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:97
+msgctxt "InstallingScreen"
+msgid "Stop the install?"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:102
+msgctxt "InstallingScreen"
+msgid ""
+"The disk has already been changed. Stopping now leaves it partly installed, "
+"and it won't start until {} is installed on it again."
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:108
+msgctxt "InstallingScreen"
+msgid "Stop and quit"
+msgstr ""
+
+#: frontend/ui/screens/installing.slint:110
+msgctxt "InstallingScreen"
+msgid "Keep installing"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:30
+msgctxt "KeyboardScreen"
+msgid "Keyboard"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:32
+msgctxt "KeyboardScreen"
+msgid "Layout: {}"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:40
+msgctxt "KeyboardScreen"
+msgid "Search keyboard layouts"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:46
+msgctxt "KeyboardScreen"
+msgid "Try it out"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:49
+msgctxt "KeyboardScreen"
+msgid "Type here to check your keyboard"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:52
+msgctxt "KeyboardScreen"
+msgid ""
+"This session's keyboard couldn't be switched, so typing here may not match: "
+"{}"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:59
+msgctxt "KeyboardScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/keyboard.slint:61
+msgctxt "KeyboardScreen"
+msgid "Next"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:50
+msgctxt "NetworkScreen"
+msgid "Connect to Wi-Fi"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:52
+msgctxt "NetworkScreen"
+msgid ""
+"This PC is offline. Join a network to install the newest packages, or skip "
+"to install from this live image."
+msgstr ""
+
+#: frontend/ui/screens/network.slint:57
+msgctxt "NetworkScreen"
+msgid "No Wi-Fi adapter was found."
+msgstr ""
+
+#: frontend/ui/screens/network.slint:73
+msgctxt "NetworkScreen"
+msgid "Wi-Fi network {}"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:84
+msgctxt "NetworkScreen"
+msgid "secured, {}%"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:85
+msgctxt "NetworkScreen"
+msgid "{}%"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:96
+msgctxt "NetworkScreen"
+msgid "Password"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:105
+msgctxt "NetworkScreen"
+msgid "Looking for networks…"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:106
+msgctxt "NetworkScreen"
+msgid "Connecting to {}…"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:107
+msgctxt "NetworkScreen"
+msgid "Couldn't connect to {}. Check the password and try again."
+msgstr ""
+
+#: frontend/ui/screens/network.slint:108
+msgctxt "NetworkScreen"
+msgid "Connecting to {} took too long."
+msgstr ""
+
+#: frontend/ui/screens/network.slint:109
+msgctxt "NetworkScreen"
+msgid "Wi-Fi isn't working: {}"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:116
+msgctxt "NetworkScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:118
+msgctxt "NetworkScreen"
+msgid "Rescan"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:119
+msgctxt "NetworkScreen"
+msgid "Skip"
+msgstr ""
+
+#: frontend/ui/screens/network.slint:121
+msgctxt "NetworkScreen"
+msgid "Join"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:35
+msgctxt "SummaryScreen"
+msgid "Summary"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:36
+msgctxt "SummaryScreen"
+msgid "Nothing is changed until you confirm."
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:38
+msgctxt "SummaryScreen"
+msgid "Language: {}"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:39
+msgctxt "SummaryScreen"
+msgid "Keyboard: {}"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:40
+msgctxt "SummaryScreen"
+msgid "Timezone: {}"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:43
+msgctxt "SummaryScreen"
+msgid "Install: offline, from this live image"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:44
+msgctxt "SummaryScreen"
+msgid "Install: online, from the package repositories"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:46
+msgctxt "SummaryScreen"
+msgid "Wi-Fi: {} is set up on the new system too"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:48
+msgctxt "SummaryScreen"
+msgid "Disk: {} ({} GiB, serial {}) will be erased completely"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:55
+msgctxt "SummaryScreen"
+msgid "Secure Boot: will be set up"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:56
+msgctxt "SummaryScreen"
+msgid "Secure Boot: not set up now"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:60
+msgctxt "SummaryScreen"
+msgid "User: {} ({}) on {}, logs in automatically"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:61
+msgctxt "SummaryScreen"
+msgid "User: {} ({}) on {}"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:68
+msgctxt "SummaryScreen"
+msgid "This can't be installed yet:\n{}"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:75
+msgctxt "SummaryScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/summary.slint:77
+msgctxt "SummaryScreen"
+msgid "Install"
+msgstr ""
+
+#: frontend/ui/screens/timezone.slint:24
+msgctxt "TimezoneScreen"
+msgid "Timezone"
+msgstr ""
+
+#: frontend/ui/screens/timezone.slint:26
+msgctxt "TimezoneScreen"
+msgid "Timezone: {}"
+msgstr ""
+
+#: frontend/ui/screens/timezone.slint:34
+msgctxt "TimezoneScreen"
+msgid "Search cities, regions or countries"
+msgstr ""
+
+#: frontend/ui/screens/timezone.slint:42
+msgctxt "TimezoneScreen"
+msgid "Back"
+msgstr ""
+
+#: frontend/ui/screens/timezone.slint:44
+msgctxt "TimezoneScreen"
+msgid "Next"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:55
+msgctxt "WelcomeScreen"
+msgid "Language: {}"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:63
+msgctxt "WelcomeScreen"
+msgid "Search languages"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:70
+msgctxt "WelcomeScreen"
+msgid "Checking this PC…"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:75
+msgctxt "WelcomeScreen"
+msgid "Couldn't check this PC: {}"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:81
+msgctxt "WelcomeScreen"
+msgid ""
+"This PC did not boot in UEFI mode. Restart and switch the firmware to UEFI "
+"to install — the live session still works without it."
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:89
+msgctxt "WelcomeScreen"
+msgid "Try live session"
+msgstr ""
+
+#: frontend/ui/screens/welcome.slint:94
+msgctxt "WelcomeScreen"
+msgid "Install"
+msgstr ""
