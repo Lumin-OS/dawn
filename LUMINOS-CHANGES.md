@@ -78,6 +78,18 @@ the dependencies below, and the HOOKS as a drop-in in
     there. Hyprland sessions get theirs from the `keyboard.lua` Dawn
     writes into `/etc/skel`.
 
+  *Done in
+  [luminos-packages#2](https://github.com/Lumin-OS/luminos-packages/pull/2)
+  and [dotfiles#1](https://github.com/Lumin-OS/dotfiles/pull/1):*
+  - *the dependencies, with a Quickshell bar*
+  - *`/etc/skel`, where `hyprland.lua` loads `keyboard.lua`*
+  - *`/etc/greetd/luminos.toml` with its drop-in, and `luminos-greeter`*
+  - *a login screen that takes its layout from `00-keyboard.conf`*
+
+  *Both `luminos.toml` and the default `keyboard.lua` are backup files,
+  so the changes Dawn makes survive upgrades. Dawn's side, writing
+  `keyboard.lua` and putting autologin into `luminos.toml`, is M5.*
+
 ### `luminos-keyring`
 
 A package with `/usr/share/pacman/keyrings/luminos.gpg` and
