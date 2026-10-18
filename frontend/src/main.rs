@@ -42,6 +42,26 @@ fn live_keyboard() -> Arc<dyn LiveKeyboard> {
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    // Slint uses the Cargo package name as the gettext domain: frontend.
+    slint::init_translations!("/usr/share/locale");
+
+    // VMs without a render node can still show the installer through
+    // winit's software renderer. Respect an explicit SLINT_BACKEND.
+    let has_gpu = std::fs::read_dir("/dev/dri").ok().is_some_and(|entries| {
+        entries
+            .flatten()
+            .any(|entry| entry.file_name().to_string_lossy().starts_with("renderD"))
+    });
+    if !has_gpu
+        && std::env::var_os("SLINT_BACKEND").is_none()
+        && let Err(err) = slint::BackendSelector::new()
+            .backend_name("winit".into())
+            .renderer_name("software".into())
+            .select()
+    {
+        eprintln!("error: {err}");
+        return ExitCode::FAILURE;
+    }
 
     let (config, config_override) = match load_config() {
         Ok(loaded) => loaded,

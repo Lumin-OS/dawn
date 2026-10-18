@@ -4,6 +4,44 @@ Log of choices made during implementation where SPEC.md didn't spell out the
 answer, or where a concrete detail had to be picked to make code compile.
 Newest first.
 
+## M5
+
+- **Dependency maintenance advisories remain tracked exceptions.** The
+  current RustSec database marks zbus_names, zvariant and zvariant_derive
+  unmaintained because they merged into zbus 6 (RUSTSEC-2026-0370–0372).
+  They remain transitive dependencies of Slint/accesskit and zbus 5. Like
+  the existing ttf-parser exception, these are maintenance notices, not
+  vulnerability suppressions; revisit at the zbus 6 migration. yoke-derive's
+  yanked patch release is updated instead of exempting the yank.
+
+- **The installed desktop contracts are now applied.** The arch adapter
+  writes `keyboard.lua` (loaded with `require("keyboard")`), adds greetd's
+  initial session in `/etc/greetd/luminos.toml`, and runs `start-hyprland`.
+  The builtin cleanup list includes `luminos-live`, which owns the live
+  autologin drop-in; deleting its obsolete /etc path is no longer needed.
+- **Slides use zero-padded PNG filenames and adjacent .txt captions.**
+  They are loaded from the branding folder, sorted by filename and shown
+  every eight seconds. The log and stop confirmation pause rotation. An
+  absent slides directory is supported. The two default slides are original
+  geometric artwork; they can be replaced without recompiling Dawn.
+- **gettext uses Slint's Cargo-package domain, `frontend`.** Initialize it
+  at `/usr/share/locale`; `po/frontend.pot` is extracted by Slint 1.18.1's
+  own extractor. v1 ships English without translated catalogs. The chosen
+  install locale does not change the GUI language. Slint's backend is
+  explicitly winit so build-machine Qt detection cannot change dependencies.
+- **Loopback boots protect the disk named by `img_dev=`.** GRUB's loopback
+  entry supplies the disk holding the ISO, whereas `archisodevice=` would
+  name the mounted ISO. The boot-medium parser accepts the former too.
+- **Packaging pins the M5 source commit until a release tag exists.**
+  `luminos-dawn` is built from Lumin-OS/dawn, with the GUI, backend, runtime
+  branding, configuration, polkit files and desktop launcher. Source commits
+  remain immutable; publishing/signing remains the user's task.
+- **The real ISO boot check belongs to the ISO repo.** CI builds the actual
+  packages and profile, adds an observer only to a temporary copied profile,
+  and checks Hyprland reports a mapped `luminos-dawn` window. It attaches no
+  installation target disk. Full real-ISO install automation stays M6.
+  Locally KVM is unavailable; a real-ISO boot is not claimed until CI passes.
+
 ## Planned for M5
 
 Decided with the user while reconciling the LuminOS workspace's notes

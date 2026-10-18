@@ -61,6 +61,9 @@ move_live_only etc/systemd/system/pacman-init.service usr/lib/systemd/system/pac
 move_live_only etc/systemd/system/etc-pacman.d-gnupg.mount usr/lib/systemd/system/etc-pacman.d-gnupg.mount
 move_live_only etc/systemd/journald.conf.d/volatile-storage.conf usr/lib/systemd/journald.conf.d/volatile-storage.conf
 move_live_only etc/systemd/logind.conf.d/do-not-suspend.conf usr/lib/systemd/logind.conf.d/do-not-suspend.conf
+# Match the real luminos-live ownership of autologin: cleanup removes the
+# package rather than deleting releng's old /etc path separately.
+move_live_only etc/systemd/system/getty@tty1.service.d/autologin.conf usr/lib/systemd/system/getty@tty1.service.d/autologin.conf
 # The enablement link moves too, but as a new relative link: the old one
 # may point into /etc.
 rm "$PROFILE/airootfs/etc/systemd/system/multi-user.target.wants/pacman-init.service"
@@ -123,6 +126,17 @@ echo "luminos:x:1000:1000:LuminOS live user:/home/luminos:/usr/bin/bash" \
 echo "luminos:!:1::::::" >> "$PROFILE/airootfs/etc/shadow"
 mkdir -p "$PROFILE/airootfs/home/luminos"
 echo 'file_permissions["/home/luminos"]="1000:1000:750"' >> "$PROFILE/profiledef.sh"
+
+# Dawn edits luminos-desktop's config, which the small test ISO stands in
+# for. Preserve greetd's upstream config.toml and give this file its own path.
+mkdir -p "$PROFILE/airootfs/etc/greetd"
+cat > "$PROFILE/airootfs/etc/greetd/luminos.toml" <<'TOML'
+[terminal]
+vt = 1
+[default_session]
+command = "agreety --cmd /bin/bash"
+user = "greeter"
+TOML
 
 # Replaces the live image's own /etc/pacman.conf, which the arch
 # adapter's pacstrap -C reads. mkarchiso copies airootfs/ in before it

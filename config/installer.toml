@@ -24,7 +24,6 @@ min_disk_gib = 32
 autologin_option = true
 
 [offline_cleanup]
-# Dawn itself is always removed by the adapter. Add "luminos-live" once
-# the ISO installs it: pacman -R fails outright on a package that isn't
-# installed.
-remove_packages = ["mkinitcpio-archiso"]
+# Dawn itself is always removed by the adapter. luminos-live owns the
+# live-only service links, keyring reset and tty1 autologin.
+remove_packages = ["mkinitcpio-archiso", "luminos-live"]

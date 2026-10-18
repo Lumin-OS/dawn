@@ -49,11 +49,8 @@ write /mnt/target/etc/systemd/zram-generator.conf
     <<< [zram0]
     <<< zram-size = ram / 2
     <<< compression-algorithm = zstd
-write /mnt/target/etc/skel/.config/hypr/keyboard.conf
-    <<< input {
-    <<<     kb_layout = us
-    <<<     kb_variant = 
-    <<< }
+write /mnt/target/etc/skel/.config/hypr/keyboard.lua
+    <<< hl.config({ input = { kb_layout = "us", kb_variant = "" } })
 ==> Step 8: Create the user, lock root, enable sudo
 arch-chroot /mnt/target useradd -m -G wheel -c 'Ada Lovelace' -s /bin/bash ada
 arch-chroot /mnt/target chpasswd
@@ -89,8 +86,8 @@ arch-chroot /mnt/target bootctl install
 ==> Step 12: Enable services, copy the log, unmount
 arch-chroot /mnt/target systemctl enable NetworkManager
 arch-chroot /mnt/target systemctl enable greetd
-set [initial_session] in /mnt/target/etc/greetd/config.toml
-    <<< command = "Hyprland"
+set [initial_session] in /mnt/target/etc/greetd/luminos.toml
+    <<< command = "start-hyprland"
     <<< user = "ada"
 cp /var/log/dawn.log /mnt/target/var/log/dawn.log
 umount -R /mnt/target

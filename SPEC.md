@@ -216,7 +216,7 @@ LuminOS is Archiso-based, runs Hyprland on Wayland, and ships Calamares today ([
 | Pipeline step | What the arch adapter does |
 | --- | --- |
 | 5 Install base system | Online: `pacstrap -K` the meta-packages with the ISO's pacman.conf, which includes the LuminOS repo and its signing key. Offline: unsquash `airootfs.sfs` from the archiso medium; copy `vmlinuz-linux` from the medium if the image has no kernel in `/boot` |
-| 6 Remove live-only parts (offline only) | `pacman -Rns` Dawn itself and `mkinitcpio-archiso`; delete the live autologin drop-in, live user and archiso mkinitcpio config; `pacman-key --init` and `--populate` for Arch and LuminOS |
+| 6 Remove live-only parts (offline only) | `pacman -Rns` Dawn itself, `mkinitcpio-archiso` and `luminos-live` (which owns live autologin); delete the live user and archiso mkinitcpio config; `pacman-key --init` and `--populate` for Arch and LuminOS |
 | 7 Locale and keyboard | Uncomment the locale in `/etc/locale.gen` and run `locale-gen`; write `vconsole.conf`; set `kb_layout` and `kb_variant` in the default Hyprland config in `/etc/skel`, so `useradd -m` copies it. Files are written directly, since `localectl` needs a running systemd |
 | 8 User | Add the user to `wheel`; sudoers drop-in enabling `%wheel`; `passwd -l root` |
 | 9 UKIs | mkinitcpio presets with `default_uki` and `fallback_uki`, systemd-based hooks plus `microcode`; command line in `/etc/kernel/cmdline` |
@@ -262,7 +262,7 @@ autologin_option = true
 
 [offline_cleanup]
 # Dawn itself is always removed by the adapter
-remove_packages = ["mkinitcpio-archiso"]
+remove_packages = ["mkinitcpio-archiso", "luminos-live"]
 ```
 
 ## Testing

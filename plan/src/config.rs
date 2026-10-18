@@ -140,7 +140,7 @@ mod tests {
         assert!(config.screens.autologin_option);
         assert_eq!(
             config.offline_cleanup.remove_packages,
-            ["mkinitcpio-archiso"]
+            ["mkinitcpio-archiso", "luminos-live"]
         );
     }
 

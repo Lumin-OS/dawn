@@ -25,6 +25,8 @@ MARKER = b"DAWN-E2E-LOGGED-IN"
 # printf's format keeps the marker out of the command line the console
 # echoes back, so only the command's output can match it.
 COMMAND = (
+    "test ! -e /usr/lib/systemd/system/getty@tty1.service.d/autologin.conf && "
+    "test ! -e /etc/systemd/system/getty@tty1.service.d/autologin.conf && "
     "printf 'DAWN-E2E-%s secure_boot=%s\\n' LOGGED-IN "
     f'"$(od -An -tu1 -j4 -N1 /sys/firmware/efi/efivars/SecureBoot-{EFI_GLOBAL} '
     "2>/dev/null | tr -d ' ')\""

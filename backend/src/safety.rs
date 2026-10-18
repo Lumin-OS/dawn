@@ -55,7 +55,10 @@ pub fn boot_medium_path(cmdline: &str) -> Option<String> {
         if let Some(uuid) = param.strip_prefix("archisosearchuuid=") {
             return Some(format!("/dev/disk/by-uuid/{uuid}"));
         }
-        if let Some(device) = param.strip_prefix("archisodevice=") {
+        if let Some(device) = param
+            .strip_prefix("archisodevice=")
+            .or_else(|| param.strip_prefix("img_dev="))
+        {
             let path = if let Some(uuid) = device.strip_prefix("UUID=") {
                 format!("/dev/disk/by-uuid/{uuid}")
             } else if let Some(label) = device.strip_prefix("LABEL=") {
@@ -291,6 +294,19 @@ tmpfs /run tmpfs rw 0 0
         assert_eq!(
             check_disk_not_running_system("/dev/nvme1n1", "/dev/nvme0n1p2"),
             Ok(())
+        );
+    }
+}
+
+#[cfg(test)]
+mod loopback_tests {
+    #[test]
+    fn loopback_boot_protects_the_disk_holding_the_iso() {
+        assert_eq!(
+            super::boot_medium_path(
+                "archisobasedir=arch img_dev=UUID=external-drive img_loop=/LuminOS.iso"
+            ),
+            Some("/dev/disk/by-uuid/external-drive".to_string())
         );
     }
 }

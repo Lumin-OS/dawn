@@ -38,7 +38,7 @@ const LOGIN_MANAGER: &str = "greetd";
 /// What greetd starts for an autologin: the desktop session itself. If
 /// luminos-desktop starts Hyprland some other way (a wrapper, uwsm),
 /// this has to follow — see LUMINOS-CHANGES.md.
-const SESSION_COMMAND: &str = "Hyprland";
+const SESSION_COMMAND: &str = "start-hyprland";
 
 /// mkinitcpio preset naming the two UKIs systemd-boot will list
 /// automatically from `/boot/EFI/Linux/` (SPEC.md "Disk & bootloader":
@@ -162,12 +162,6 @@ impl Adapter for ArchAdapter {
             Action::Run(Self::chroot(layout, remove)),
             Action::Run(Self::chroot(layout, ["userdel", "-r", LIVE_USER])),
             Action::RemoveFile {
-                path: format!(
-                    "{}/etc/systemd/system/getty@tty1.service.d/autologin.conf",
-                    layout.target
-                ),
-            },
-            Action::RemoveFile {
                 path: format!("{}/etc/mkinitcpio.conf.d/archiso.conf", layout.target),
             },
             Action::Run(Self::chroot(layout, ["pacman-key", "--init"])),
@@ -179,16 +173,12 @@ impl Adapter for ArchAdapter {
     }
 
     fn keyboard_config(&self, plan: &InstallPlan, layout: &DiskLayout) -> Vec<Action> {
-        // Writes a dedicated, Dawn-owned file rather than the shared
-        // hyprland.conf: luminos-desktop's default config is expected to
-        // `source = ~/.config/hypr/keyboard.conf`, so this can be
-        // overwritten wholesale without touching keybinds, autostart, or
-        // anything else the user or luminos-desktop put in hyprland.conf.
-        // See DECISIONS.md.
+        // luminos-desktop loads this with require("keyboard"). XKB names
+        // have already been validated as letters, digits, '_' and '-'.
         vec![Action::WriteFile {
-            path: format!("{}/etc/skel/.config/hypr/keyboard.conf", layout.target),
+            path: format!("{}/etc/skel/.config/hypr/keyboard.lua", layout.target),
             content: format!(
-                "input {{\n    kb_layout = {}\n    kb_variant = {}\n}}\n",
+                "hl.config({{ input = {{ kb_layout = \"{}\", kb_variant = \"{}\" }} }})\n",
                 plan.keyboard.layout, plan.keyboard.variant
             ),
         }]
@@ -243,11 +233,11 @@ impl Adapter for ArchAdapter {
         if plan.user.autologin {
             // greetd's `initial_session` runs once, on the first start
             // after boot, without going through the greeter. It's added
-            // to luminos-desktop's own config.toml, whose
+            // to luminos-desktop's own luminos.toml, whose
             // `default_session` (the greeter) handles every later login;
             // greetd has no drop-in directory to put it in instead.
             actions.push(Action::SetTomlTable {
-                path: format!("{}/etc/greetd/config.toml", layout.target),
+                path: format!("{}/etc/greetd/luminos.toml", layout.target),
                 table: "initial_session".to_string(),
                 entries: vec![
                     ("command".to_string(), SESSION_COMMAND.to_string()),
