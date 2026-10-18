@@ -302,3 +302,8 @@ The published database uses replacement signing key
 matching public key. The user's approved keyring rotation is a companion
 change; publication is a user release step. The real-ISO workflow verifies
 the database signature and package hashes before building.
+
+Implementation PRs: [Dawn helpers #12](https://github.com/Lumin-OS/dawn/pull/12),
+[ISO workflow #5](https://github.com/Lumin-OS/LuminOS/pull/5), and
+[keyring rotation #4](https://github.com/Lumin-OS/luminos-packages/pull/4).
+M6 acceptance stays pending until the real-ISO workflow passes all scenarios.

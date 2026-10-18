@@ -44,6 +44,8 @@ if os.environ.get("DAWN_E2E_REAL_ISO") == "1":
         "! pacman -Q mkinitcpio-archiso >/dev/null 2>&1 && "
         "! getent passwd luminos >/dev/null && "
         "test -s ~/.config/hypr/keyboard.lua && "
+        "grep -Fxq 547F4761802A0904A0B10E5FAE527343BC3E39B3:4: "
+        "/usr/share/pacman/keyrings/luminos-trusted && "
         "systemctl is-enabled greetd.service >/dev/null && "
         "systemctl is-enabled NetworkManager.service >/dev/null && "
         + COMMAND
