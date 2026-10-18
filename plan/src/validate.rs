@@ -59,6 +59,9 @@ pub enum ValidationError {
     #[error("mount point {0:?} is assigned to more than one partition")]
     DuplicateMountPoint(String),
 
+    #[error("invalid partition assignment: {0}")]
+    InvalidPartition(String),
+
     #[error("secure_boot.enroll requires secure_boot.microsoft_keys (v1 always keeps them)")]
     SecureBootMustKeepMicrosoftKeys,
 }
@@ -119,7 +122,7 @@ pub fn validate(plan: &InstallPlan) -> Result<(), Vec<ValidationError>> {
 }
 
 fn validate_disk(disk: &Disk, errors: &mut Vec<ValidationError>) {
-    if !disk.device.starts_with("/dev/disk/by-id/") {
+    if !stable_device(&disk.device, false) {
         errors.push(ValidationError::DeviceNotById(disk.device.clone()));
     }
 
@@ -151,9 +154,27 @@ fn validate_disk(disk: &Disk, errors: &mut Vec<ValidationError>) {
                 errors.push(ValidationError::ExpectedOneRoot(root_count));
             }
 
+            let mut seen_devices = Vec::new();
             let mut seen_mount_points = Vec::new();
             for partition in partitions {
-                if !partition.mount_point.starts_with('/') {
+                if !stable_device(&partition.device, true)
+                    || seen_devices.contains(&partition.device)
+                {
+                    errors.push(ValidationError::InvalidPartition(format!(
+                        "{} must name a distinct stable partition",
+                        partition.device
+                    )));
+                }
+                seen_devices.push(partition.device.clone());
+                let role_matches = match partition.role {
+                    PartitionRole::Esp => partition.mount_point == "/boot",
+                    PartitionRole::Root => partition.mount_point == "/" && partition.format,
+                    PartitionRole::Other => valid_data_mount(&partition.mount_point),
+                };
+                if !role_matches {
+                    errors.push(ValidationError::InvalidPartition(format!("{}: ESP must use /boot; root must use / and be formatted; data needs a non-system mount point", partition.device)));
+                }
+                if !canonical_mount(&partition.mount_point) {
                     errors.push(ValidationError::InvalidMountPoint(
                         partition.mount_point.clone(),
                     ));
@@ -167,8 +188,58 @@ fn validate_disk(disk: &Disk, errors: &mut Vec<ValidationError>) {
                     seen_mount_points.push(partition.mount_point.clone());
                 }
             }
+            for (i, a) in partitions.iter().enumerate() {
+                for b in partitions.iter().skip(i + 1) {
+                    if a.mount_point != "/"
+                        && b.mount_point.starts_with(&format!("{}/", a.mount_point))
+                        || b.mount_point != "/"
+                            && a.mount_point.starts_with(&format!("{}/", b.mount_point))
+                    {
+                        errors.push(ValidationError::InvalidPartition(
+                            "nested data mounts are not supported".into(),
+                        ));
+                    }
+                }
+            }
         }
     }
+}
+
+fn stable_device(path: &str, partition: bool) -> bool {
+    let name = path.strip_prefix("/dev/disk/by-id/").or_else(|| {
+        partition
+            .then(|| path.strip_prefix("/dev/disk/by-partuuid/"))
+            .flatten()
+    });
+    name.is_some_and(|s| {
+        !s.is_empty()
+            && s != "."
+            && s != ".."
+            && !s.contains('/')
+            && !s.chars().any(char::is_whitespace)
+    })
+}
+
+fn canonical_mount(path: &str) -> bool {
+    path == "/"
+        || path.starts_with('/')
+            && path.split('/').skip(1).all(|s| {
+                !s.is_empty()
+                    && s != "."
+                    && s != ".."
+                    && s.chars()
+                        .all(|c| c.is_ascii_alphanumeric() || "_-".contains(c))
+            })
+}
+
+fn valid_data_mount(path: &str) -> bool {
+    canonical_mount(path)
+        && ![
+            "/", "/boot", "/etc", "/usr", "/var", "/dev", "/proc", "/sys", "/run", "/tmp", "/mnt",
+            "/bin", "/sbin", "/lib", "/lib64",
+        ]
+        .iter()
+        .any(|p| path == *p || *p != "/" && path.starts_with(&format!("{p}/")))
 }
 
 /// A conservative subset of `useradd`'s NAME_REGEX: starts with a lowercase
@@ -343,6 +414,65 @@ mod tests {
                 .iter()
                 .any(|e| matches!(e, ValidationError::DuplicateMountPoint(m) if m == "/"))
         );
+    }
+
+    #[test]
+    fn manual_rejects_unsafe_paths_roles_duplicates_and_root_reuse() {
+        let mut p = valid_plan();
+        p.disk.mode = DiskMode::Manual;
+        let esp = PartitionAssignment {
+            device: "/dev/disk/by-id/virtio-dawn-target-part1".into(),
+            mount_point: "/boot".into(),
+            format: false,
+            role: PartitionRole::Esp,
+        };
+        let root = PartitionAssignment {
+            device: "/dev/disk/by-id/virtio-dawn-target-part2".into(),
+            mount_point: "/".into(),
+            format: true,
+            role: PartitionRole::Root,
+        };
+        for mount in [
+            "/../etc",
+            "/home/../../etc",
+            "/boot/EFI",
+            "/etc",
+            "/home/",
+            "//home",
+            "/usr/local",
+        ] {
+            p.disk.partitions = Some(vec![
+                esp.clone(),
+                root.clone(),
+                PartitionAssignment {
+                    device: "/dev/disk/by-id/virtio-dawn-target-part3".into(),
+                    mount_point: mount.into(),
+                    format: false,
+                    role: PartitionRole::Other,
+                },
+            ]);
+            assert!(validate(&p).is_err(), "{mount}");
+        }
+        let mut reused = root.clone();
+        reused.format = false;
+        p.disk.partitions = Some(vec![esp.clone(), reused]);
+        assert!(validate(&p).is_err());
+        let mut duplicate = root.clone();
+        duplicate.device = esp.device.clone();
+        p.disk.partitions = Some(vec![esp.clone(), duplicate]);
+        assert!(validate(&p).is_err());
+        let mut raw = root.clone();
+        raw.device = "/dev/disk/by-id/../escape".into();
+        p.disk.partitions = Some(vec![esp.clone(), raw]);
+        assert!(validate(&p).is_err());
+        let data = PartitionAssignment {
+            device: "/dev/disk/by-partuuid/example-data".into(),
+            mount_point: "/home".into(),
+            format: false,
+            role: PartitionRole::Other,
+        };
+        p.disk.partitions = Some(vec![esp, root, data]);
+        assert_eq!(validate(&p), Ok(()));
     }
 
     #[test]

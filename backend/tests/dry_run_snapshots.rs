@@ -84,3 +84,25 @@ fn an_invalid_plan_is_rejected_with_no_partial_output() {
 
     let _ = std::fs::remove_file(&bad_plan);
 }
+
+#[test]
+fn manual_online_preserves_unassigned_partitions_and_esp() {
+    assert_matches_golden("manual-online");
+    let output = Command::cargo_bin("dawn-backend")
+        .unwrap()
+        .arg("--dry-run")
+        .arg(workspace_root().join("tests/plans/manual-online.json"))
+        .output()
+        .unwrap();
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(!text.contains("sfdisk"));
+    assert!(!text.contains("mkfs.fat"));
+    assert!(
+        text.lines()
+            .filter(|line| line.starts_with("mkfs."))
+            .all(|line| line.ends_with("virtio-dawn-target-part2"))
+    );
+    assert!(!text.contains("part4"));
+    assert!(text.contains("subvol=@,compress=zstd"));
+    assert!(text.contains("rootflags=subvol=@"));
+}

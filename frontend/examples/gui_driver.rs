@@ -64,10 +64,18 @@ fn main() -> ExitCode {
     };
     let dry_run = args.get(3).is_some_and(|arg| arg == "--dry-run");
 
+    let manual = scenario.starts_with("manual-");
     let outcome = driver::run(async move { drive(&scenario, &target, dry_run).await });
     match outcome {
         Ok(()) => {
-            println!("DAWN-E2E-INSTALL-OK");
+            println!(
+                "{}",
+                if manual {
+                    "DAWN-E2E-GUI-OK"
+                } else {
+                    "DAWN-E2E-INSTALL-OK"
+                }
+            );
             ExitCode::SUCCESS
         }
         Err(err) => {
@@ -99,6 +107,24 @@ async fn drive(scenario: &str, target: &str, dry_run: bool) -> Result<(), String
     let only_target = !dry_run;
 
     match scenario {
+        "manual-online" | "manual-offline" => {
+            let answers = Answers {
+                manual: true,
+                ..answers
+            };
+            fill_to_summary(
+                &app,
+                if scenario == "manual-offline" {
+                    Network::Skip
+                } else {
+                    Network::Online
+                },
+                &answers,
+            )
+            .await?;
+            check_only_disk_offered(&app, target)?;
+            install_to_done(&app).await
+        }
         "online" => {
             fill_to_summary(&app, Network::Online, &answers).await?;
             if only_target {

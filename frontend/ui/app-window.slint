@@ -6,14 +6,14 @@ import { WelcomeScreen } from "screens/welcome.slint";
 import { NetworkScreen, WifiNetwork, WifiStatus } from "screens/network.slint";
 import { KeyboardScreen } from "screens/keyboard.slint";
 import { TimezoneScreen } from "screens/timezone.slint";
-import { DiskScreen, DiskInfo } from "screens/disk.slint";
+import { DiskScreen, DiskInfo, PartitionInfo } from "screens/disk.slint";
 import { AccountScreen } from "screens/account.slint";
 import { SummaryScreen } from "screens/summary.slint";
 import { InstallingScreen } from "screens/installing.slint";
 import { DoneScreen } from "screens/done.slint";
 import { ErrorScreen } from "screens/error.slint";
 
-export { Choice, DiskInfo, Theme, WifiNetwork, WifiStatus }
+export { Choice, DiskInfo, PartitionInfo, Theme, WifiNetwork, WifiStatus }
 
 // SPEC.md "User flow": nine screens, linear, with Back on every screen
 // until Install is pressed; Network only appears when offline; an
@@ -77,6 +77,7 @@ export component AppWindow inherits Window {
     in-out property <int> selected-size-gib;
     in-out property <string> selected-serial;
     in-out property <string> disk-mode: "erase";
+    in-out property <[PartitionInfo]> partitions;
     in-out property <bool> secure-boot-enroll;
     in-out property <string> full-name;
     in-out property <string> username;
@@ -212,6 +213,7 @@ export component AppWindow inherits Window {
         selected-size-gib <=> root.selected-size-gib;
         selected-serial <=> root.selected-serial;
         mode <=> root.disk-mode;
+        partitions <=> root.partitions;
         is-setup-mode: root.is-setup-mode;
         secure-boot-enroll <=> root.secure-boot-enroll;
         back => { root.go-back(); }
@@ -240,6 +242,8 @@ export component AppWindow inherits Window {
         disk-size-gib: root.selected-size-gib;
         disk-serial: root.selected-serial;
         disk-device: root.selected-device;
+        disk-mode: root.disk-mode;
+        partitions: root.partitions;
         is-offline: root.is-offline;
         network-profile: root.network-profile;
         full-name: root.full-name;

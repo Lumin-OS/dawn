@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { Button } from "std-widgets.slint";
+import { Button, ScrollView } from "std-widgets.slint";
+import { PartitionInfo } from "disk.slint";
 
 // SPEC.md: "Lists every change, says online or offline install, names
 // the disk to be wiped, needs an explicit confirm." Nothing touches a
@@ -15,6 +16,8 @@ export component SummaryScreen inherits VerticalLayout {
     in property <int> disk-size-gib;
     in property <string> disk-serial;
     in property <string> disk-device;
+    in property <string> disk-mode;
+    in property <[PartitionInfo]> partitions;
     in property <bool> is-offline;
     in property <string> network-profile;
     in property <string> full-name;
@@ -45,9 +48,22 @@ export component SummaryScreen inherits VerticalLayout {
     }
     if network-profile != "": Text { text: @tr("Wi-Fi: {} is set up on the new system too", network-profile); }
     Text {
-        text: @tr("Disk: {} ({} GiB, serial {}) will be erased completely", disk-model, disk-size-gib, disk-serial);
+        text: disk-mode == "manual"
+            ? @tr("Disk: {} ({} GiB, serial {}) — only assigned partitions will be used", disk-model, disk-size-gib, disk-serial)
+            : @tr("Disk: {} ({} GiB, serial {}) will be erased completely", disk-model, disk-size-gib, disk-serial);
         wrap: word-wrap;
         font-weight: 700;
+    }
+    if disk-mode == "manual": ScrollView {
+        min-height: 80px;
+        VerticalLayout {
+            for partition in partitions: Text {
+                text: partition.mount-point == "" ? @tr("{}: untouched", partition.device)
+                    : partition.format ? @tr("{} → {}: FORMAT (all existing files lost)", partition.device, partition.mount-point)
+                    : @tr("{} → {}: reuse filesystem", partition.device, partition.mount-point);
+                wrap: word-wrap;
+            }
+        }
     }
     Text { text: disk-device; font-size: 12px; color: #888888; }
     Text {

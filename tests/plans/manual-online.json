@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "locale": "en_US.UTF-8",
+  "keyboard": {
+    "layout": "us",
+    "variant": ""
+  },
+  "timezone": "Europe/Berlin",
+  "hostname": "ada-laptop",
+  "source": "pacstrap",
+  "packages": [
+    "luminos-base",
+    "luminos-desktop"
+  ],
+  "disk": {
+    "mode": "manual",
+    "device": "/dev/disk/by-id/virtio-dawn-target",
+    "filesystem": "btrfs",
+    "partitions": [
+      {
+        "device": "/dev/disk/by-id/virtio-dawn-target-part1",
+        "mount_point": "/boot",
+        "format": false,
+        "role": "esp"
+      },
+      {
+        "device": "/dev/disk/by-id/virtio-dawn-target-part2",
+        "mount_point": "/",
+        "format": true,
+        "role": "root"
+      },
+      {
+        "device": "/dev/disk/by-id/virtio-dawn-target-part3",
+        "mount_point": "/home",
+        "format": false,
+        "role": "other"
+      }
+    ]
+  },
+  "secure_boot": {
+    "enroll": false,
+    "microsoft_keys": true
+  },
+  "user": {
+    "full_name": "Ada Lovelace",
+    "username": "ada",
+    "password": "correct-horse-battery-staple",
+    "autologin": false
+  }
+}

@@ -92,6 +92,18 @@ pub struct DiskInfo {
     /// it greyed out with this reason.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unavailable: Option<String>,
+    #[serde(default)]
+    pub partitions: Vec<PartitionInfo>,
+}
+
+/// An existing direct partition of the disk returned by `list_disks`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PartitionInfo {
+    pub device: String,
+    pub size_bytes: u64,
+    pub filesystem: String,
+    pub is_esp: bool,
+    pub read_only: bool,
 }
 
 #[cfg(test)]

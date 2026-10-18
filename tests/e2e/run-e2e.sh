@@ -91,9 +91,9 @@ run_scenario() {
 
   trap stop_mirror EXIT
   case "$scenario" in
-    online|secure-boot) "$E2E_DIR/serve-mirror.sh" "$MIRROR" "$SERVER_PID" ;;
+    online|secure-boot|manual-online) "$E2E_DIR/serve-mirror.sh" "$MIRROR" "$SERVER_PID" ;;
     fail-then-offline) "$E2E_DIR/serve-mirror.sh" "$MIRROR_DB_ONLY" "$SERVER_PID" ;;
-    offline) ;;
+    offline|manual-offline) ;;
   esac
 
   qemu-img create -f qcow2 "$target" 40G
@@ -105,6 +105,10 @@ run_scenario() {
   # live system, so its absence later means something.
   grep -q "DAWN-E2E-LIVE-ONLY-UNIT-RAN" "$install_log" \
     || fail "the live-only unit never ran on the live system"
+  if [[ "$scenario" == manual-* ]]; then
+    grep -q DAWN-E2E-MANUAL-REFUSALS-OK "$install_log" || fail "manual safety refusals were not checked"
+    grep -q DAWN-E2E-MANUAL-PRESERVED "$install_log" || fail "manual preservation assertions did not pass"
+  fi
   if [ "$scenario" = "fail-then-offline" ]; then
     grep -q "DAWN-E2E-ERROR-SCREEN-OK" "$install_log" \
       || fail "the error screen was never checked"
@@ -137,7 +141,7 @@ run_scenario() {
 
 case "${1:-}" in
   prepare) prepare ;;
-  online|offline|fail-then-offline|secure-boot) run_scenario "$1" ;;
+  online|offline|fail-then-offline|secure-boot|manual-online|manual-offline) run_scenario "$1" ;;
   *)
     echo "usage: run-e2e.sh prepare | online | offline | fail-then-offline | secure-boot" >&2
     exit 2

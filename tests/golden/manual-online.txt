@@ -1,0 +1,78 @@
+==> Adapter: arch
+==> Step 1: Validate plan and re-probe the disk
+lsblk --json -o NAME,SIZE,MODEL,MOUNTPOINT /dev/disk/by-id/virtio-dawn-target
+check the repositories in /etc/pacman.conf are reachable
+==> Step 2: Partition the disk
+==> Step 3: Format and create btrfs subvolumes
+mkfs.btrfs -f -L root /dev/disk/by-id/virtio-dawn-target-part2
+mkdir -p /mnt/target
+mount /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
+btrfs subvolume create /mnt/target/@
+btrfs subvolume create /mnt/target/@home
+umount /mnt/target
+==> Step 4: Mount the target
+mkdir -p /mnt/target
+mount -o subvol=@,compress=zstd /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
+mkdir -p /mnt/target/boot
+mount /dev/disk/by-id/virtio-dawn-target-part1 /mnt/target/boot
+mkdir -p /mnt/target/home
+mount /dev/disk/by-id/virtio-dawn-target-part3 /mnt/target/home
+==> Step 5: Install the base system
+pacstrap -K -C /etc/pacman.conf /mnt/target luminos-base luminos-desktop
+gpgconf --homedir /mnt/target/etc/pacman.d/gnupg --kill all
+==> Step 7: Write fstab, locale, keymap, timezone, hostname, zram
+genfstab -U /mnt/target  # stdout appended to /mnt/target/etc/fstab
+uncomment "en_US.UTF-8 UTF-8" in /mnt/target/etc/locale.gen
+arch-chroot /mnt/target locale-gen
+write /mnt/target/etc/locale.conf
+    <<< LANG=en_US.UTF-8
+write /mnt/target/etc/vconsole.conf with the console keymap for us from /mnt/target/usr/share/systemd/kbd-model-map
+write /mnt/target/etc/X11/xorg.conf.d/00-keyboard.conf
+    <<< # Written by dawn-backend in systemd-localed's format; change it with
+    <<< # localectl set-x11-keymap.
+    <<< Section "InputClass"
+    <<<         Identifier "system-keyboard"
+    <<<         MatchIsKeyboard "on"
+    <<<         Option "XkbLayout" "us"
+    <<< EndSection
+symlink /mnt/target/etc/localtime -> /usr/share/zoneinfo/Europe/Berlin
+write /mnt/target/etc/hostname
+    <<< ada-laptop
+write /mnt/target/etc/systemd/zram-generator.conf
+    <<< [zram0]
+    <<< zram-size = ram / 2
+    <<< compression-algorithm = zstd
+write /mnt/target/etc/skel/.config/hypr/keyboard.lua
+    <<< hl.config({ input = { kb_layout = "us", kb_variant = "" } })
+==> Step 8: Create the user, lock root, enable sudo
+arch-chroot /mnt/target useradd -m -G wheel -c 'Ada Lovelace' -s /bin/bash ada
+arch-chroot /mnt/target chpasswd
+    <<< [REDACTED]
+arch-chroot /mnt/target passwd -l root
+write /mnt/target/etc/sudoers.d/10-wheel
+    <<< %wheel ALL=(ALL:ALL) ALL
+==> Step 9: Build UKIs
+write /mnt/target/etc/kernel/cmdline
+    <<< root=/dev/disk/by-id/virtio-dawn-target-part2 rootflags=subvol=@ rw console=tty0 console=ttyS0,115200n8
+write /mnt/target/etc/mkinitcpio.d/linux.preset
+    <<< # mkinitcpio preset for the linux package — built by dawn-backend
+    <<< 
+    <<< ALL_kver="/boot/vmlinuz-linux"
+    <<< 
+    <<< PRESETS=('default' 'fallback')
+    <<< 
+    <<< default_uki="/boot/EFI/Linux/arch-linux.efi"
+    <<< default_options="--cmdline /etc/kernel/cmdline"
+    <<< 
+    <<< fallback_uki="/boot/EFI/Linux/arch-linux-fallback.efi"
+    <<< fallback_options="-S autodetect --cmdline /etc/kernel/cmdline"
+mkdir -p /mnt/target/boot/EFI/Linux
+arch-chroot /mnt/target mkinitcpio -P
+==> Step 11: Install the bootloader
+arch-chroot /mnt/target bootctl install
+==> Step 12: Enable services, copy the log, unmount
+arch-chroot /mnt/target systemctl enable NetworkManager
+arch-chroot /mnt/target systemctl enable greetd
+cp /var/log/dawn.log /mnt/target/var/log/dawn.log
+umount -R /mnt/target
+sync

@@ -413,6 +413,25 @@ fn disk_model(disks: Vec<protocol::DiskInfo>) -> ModelRc<DiskInfo> {
             size_gib: i32::try_from(disk.size_bytes / GIB).unwrap_or(i32::MAX),
             serial: disk.serial.into(),
             unavailable: disk.unavailable.unwrap_or_default().into(),
+            partitions: ModelRc::new(VecModel::from(
+                disk.partitions
+                    .into_iter()
+                    .map(|p| PartitionInfo {
+                        description: format!(
+                            "{} — {:.1} GiB {}{}",
+                            p.device,
+                            p.size_bytes as f64 / GIB as f64,
+                            p.filesystem,
+                            if p.is_esp { " ESP" } else { "" }
+                        )
+                        .into(),
+                        device: p.device.into(),
+                        mount_point: "".into(),
+                        format: false,
+                        unavailable: p.read_only,
+                    })
+                    .collect::<Vec<_>>(),
+            )),
         })
         .collect();
     ModelRc::new(VecModel::from(rows))
@@ -547,6 +566,22 @@ fn plan_fields(app: &AppWindow, packages: &[String]) -> state::PlanFields {
         network_profile: app.get_network_profile().to_string(),
         packages: packages.to_vec(),
         disk_device: app.get_selected_device().to_string(),
+        manual: app.get_disk_mode() == "manual",
+        partitions: app
+            .get_partitions()
+            .iter()
+            .filter(|p| !p.mount_point.is_empty())
+            .map(|p| plan::PartitionAssignment {
+                device: p.device.to_string(),
+                mount_point: p.mount_point.to_string(),
+                format: p.format,
+                role: match p.mount_point.as_str() {
+                    "/" => plan::PartitionRole::Root,
+                    "/boot" => plan::PartitionRole::Esp,
+                    _ => plan::PartitionRole::Other,
+                },
+            })
+            .collect(),
         secure_boot_enroll: app.get_is_setup_mode() && app.get_secure_boot_enroll(),
         full_name: app.get_full_name().to_string(),
         username: app.get_username().to_string(),

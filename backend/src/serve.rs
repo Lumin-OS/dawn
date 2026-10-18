@@ -172,6 +172,11 @@ fn validation_errors(plan: &InstallPlan, options: &Options) -> Vec<String> {
         },
         Err(message) => errors.push(message),
     }
+    if let Err(message) =
+        probe::validate_manual(plan, options.config.defaults.min_disk_gib, &options.live)
+    {
+        errors.push(message);
+    }
     // The GUI only offers Secure Boot in Setup Mode, but the firmware
     // can have changed since, and a plan can come from anywhere.
     if plan.secure_boot.enroll && !probe::probe_firmware().setup_mode {
@@ -206,6 +211,7 @@ fn start_install(
             &options.live,
         )
         .map_err(|message| format!("refusing to install: {message}"))?;
+        probe::validate_manual(&plan, options.config.defaults.min_disk_gib, &options.live)?;
     }
 
     let adapter = ArchAdapter::new(&options.config, &options.live);

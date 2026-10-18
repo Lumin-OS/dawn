@@ -188,6 +188,11 @@ fn run_plan_file(
         return ExitCode::FAILURE;
     }
 
+    if let Err(message) = probe::validate_manual(&plan, config.defaults.min_disk_gib, live) {
+        eprintln!("error: refusing manual install: {message}");
+        return ExitCode::FAILURE;
+    }
+
     let mut log = match Log::with_file(pipeline::LOG_FILE, |line| println!("{line}")) {
         Ok(log) => log,
         Err(err) => {

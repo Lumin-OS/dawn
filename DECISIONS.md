@@ -838,3 +838,22 @@ entries say how.
 
 - **Changes needed in LuminOS itself** (its ISO profile and
   luminos-repository) are tracked in `LUMINOS-CHANGES.md`.
+
+## M7 — manual partitioning
+
+- User decision (2026-10-18): require root formatting initially, while allowing
+  the ESP and separate data partitions to be reused without formatting.
+  Installing over an existing root system is deferred.
+- Manual installs retain the erase-mode btrfs @ / @home layout; a separate
+  /home assignment replaces the @home mount. No partition table changes or
+  resizing are performed. Re-probe partition ownership and filesystem before
+  formatting, through both the CLI and socket entry points.
+- Data reuse initially supports btrfs, ext4, xfs and FAT. Reject system mount
+  points and nested assignments so reused data cannot supply a symlinked
+  ancestor for a later mount outside the freshly formatted root. Reused /home
+  needs a POSIX filesystem. Unsupported filesystems and mapped child devices
+  are refused before formatting, rather than discovered after destructive work.
+- The acceptance fixture is a disposable VM disk with a FAT ESP, an ext4 old
+  root, an ext4 home and an unassigned raw partition. Both source modes must
+  preserve ESP/home UUIDs and files, the GPT dump and the entire unassigned
+  partition hash, then reboot and log in using the installed system.

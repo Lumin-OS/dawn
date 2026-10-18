@@ -153,13 +153,11 @@ fn disk_layout(plan: &InstallPlan) -> Result<DiskLayout, PipelineError> {
                         role: name,
                     })
             };
-            // Manual mode mounts the root partition's top level at / in
-            // step 4, not a subvolume.
             Ok(DiskLayout {
                 target,
                 esp_device: find(PartitionRole::Esp, "ESP")?,
                 root_device: find(PartitionRole::Root, "root")?,
-                root_subvolume: None,
+                root_subvolume: Some("@".to_string()),
             })
         }
     }
@@ -211,12 +209,7 @@ fn step2_partition(plan: &InstallPlan) -> Vec<Action> {
                 udev_settle(),
             ]
         }
-        DiskMode::Manual => {
-            vec![
-                Action::Run(Invocation::new("partprobe", [plan.disk.device.as_str()])),
-                udev_settle(),
-            ]
-        }
+        DiskMode::Manual => Vec::new(),
     }
 }
 
@@ -320,11 +313,29 @@ fn step4_mount(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, P
         ]),
         DiskMode::Manual => {
             let partitions = manual_partitions(plan, 4)?;
-            // Root first, then everything else, so parent mount points exist.
-            let mut ordered: Vec<_> = partitions.iter().collect();
-            ordered.sort_by_key(|p| p.mount_point != "/");
-            let mut actions = Vec::new();
-            for partition in ordered {
+            let mut actions = vec![
+                Action::Run(Invocation::new("mkdir", ["-p", TARGET])),
+                Action::Run(Invocation::new(
+                    "mount",
+                    ["-o", "subvol=@,compress=zstd", &layout.root_device, TARGET],
+                )),
+            ];
+            if !partitions.iter().any(|p| p.mount_point == "/home") {
+                actions.push(Action::Run(Invocation::new(
+                    "mkdir",
+                    ["-p", &format!("{TARGET}/home")],
+                )));
+                actions.push(Action::Run(Invocation::new(
+                    "mount",
+                    [
+                        "-o",
+                        "subvol=@home,compress=zstd",
+                        &layout.root_device,
+                        &format!("{TARGET}/home"),
+                    ],
+                )));
+            }
+            for partition in partitions.iter().filter(|p| p.role != PartitionRole::Root) {
                 let target_path = format!("{TARGET}{}", partition.mount_point);
                 actions.push(Action::Run(Invocation::new("mkdir", ["-p", &target_path])));
                 actions.push(Action::Run(Invocation::new(
