@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Runs only in the disposable test guest, before/after its manual GUI install.
-set -euo pipefail
+set -Eeuo pipefail
 scenario="$(cat "$CREDENTIALS_DIRECTORY/dawn.scenario")"
 case "$scenario" in manual-online|manual-offline) ;; *) exit 0 ;; esac
 # These checks are additional to the service's archiso/credential gates.
@@ -11,6 +11,7 @@ disk=/dev/disk/by-id/virtio-dawn-target
 state=/run/dawn-manual-fixture
 mountpoint=/run/dawn-manual-check
 mkdir -p "$state" "$mountpoint"
+trap 'rc=$?; echo "DAWN-E2E-MANUAL-ASSERTION-FAILED line=$LINENO status=$rc"; blkid -p "${disk}-part1" || true; blkid -p "${disk}-part2" || true; blkid -p "${disk}-part3" || true; cat "$state/esp.uuid" "$state/home.uuid" 2>/dev/null || true; exit "$rc"' ERR
 trap 'umount "$mountpoint" 2>/dev/null || true' EXIT
 case "${1:-}" in
   seed)
@@ -41,8 +42,8 @@ EOF
     sync
     sha256sum "${disk}-part4" > "$state/unassigned.sha256"
     sfdisk --dump "$disk" > "$state/table"
-    blkid -s UUID -o value "${disk}-part1" > "$state/esp.uuid"
-    blkid -s UUID -o value "${disk}-part3" > "$state/home.uuid"
+    blkid -p -s UUID -o value "${disk}-part1" > "$state/esp.uuid"
+    blkid -p -s UUID -o value "${disk}-part3" > "$state/home.uuid"
     # Exercise the real CLI refusal boundary before the successful GUI path.
     python - "$disk" <<'PYTEST'
 import copy, json, pathlib, subprocess, sys
@@ -81,9 +82,9 @@ PYTEST
     sha256sum --check "$state/unassigned.sha256"
     sfdisk --dump "$disk" > "$state/table-after"
     cmp "$state/table" "$state/table-after"
-    [ "$(blkid -s UUID -o value "${disk}-part1")" = "$(cat "$state/esp.uuid")" ]
-    [ "$(blkid -s UUID -o value "${disk}-part3")" = "$(cat "$state/home.uuid")" ]
-    [ "$(blkid -s TYPE -o value "${disk}-part2")" = btrfs ]
+    [ "$(blkid -p -s UUID -o value "${disk}-part1")" = "$(cat "$state/esp.uuid")" ]
+    [ "$(blkid -p -s UUID -o value "${disk}-part3")" = "$(cat "$state/home.uuid")" ]
+    [ "$(blkid -p -s TYPE -o value "${disk}-part2")" = btrfs ]
     mount -o ro "${disk}-part1" "$mountpoint"
     grep -qx 'existing ESP content' "$mountpoint/EFI/Microsoft/Boot/dawn-sentinel"
     umount "$mountpoint"
@@ -93,7 +94,10 @@ PYTEST
     umount "$mountpoint"
     mount -o ro,subvol=@ "${disk}-part2" "$mountpoint"
     [ ! -e "$mountpoint/old-root-sentinel" ]
-    grep -q ' /home ' "$mountpoint/etc/fstab"
+    cat "$mountpoint/etc/fstab"
+    awk '$2 == "/home" && $3 == "ext4" { found=1 } END { exit !found }' "$mountpoint/etc/fstab"
+    root_uuid="$(blkid -p -s UUID -o value "${disk}-part2")"
+    awk -v uuid="$root_uuid" '$1 == "UUID=" uuid && $2 == "/" && $3 == "btrfs" { found=1 } END { exit !found }' "$mountpoint/etc/fstab"
     umount "$mountpoint"
     echo DAWN-E2E-MANUAL-PRESERVED
     # QEMU waits for this only after every preservation assertion passed.
