@@ -326,3 +326,9 @@ Shipping M7 requires a new pinned luminos-dawn recipe and pkgrel, then the
 user's package signing/publication. The ISO smoke build must consume that
 recipe; existing published-package M6 nightly pins remain unchanged until
 the new package has been published and validated.
+
+M7 review set: [Dawn #13](https://github.com/Lumin-OS/dawn/pull/13),
+[package recipe #5](https://github.com/Lumin-OS/luminos-packages/pull/5), and
+[real ISO smoke pin #6](https://github.com/Lumin-OS/LuminOS/pull/6). Merge in
+that order. The recipe pins the M7 implementation, preserving portable
+baseline x86-64 compilation, and releases luminos-dawn 0.1.0-3.
