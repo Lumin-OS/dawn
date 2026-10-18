@@ -99,6 +99,12 @@ fn manual_online_preserves_unassigned_partitions_and_esp() {
     assert!(!text.contains("mkfs.fat"));
     assert!(
         text.lines()
+            .filter(|line| line.starts_with("wipefs "))
+            .all(|line| line.ends_with("virtio-dawn-target-part2"))
+    );
+    assert!(text.contains("mount -t btrfs"));
+    assert!(
+        text.lines()
             .filter(|line| line.starts_with("mkfs."))
             .all(|line| line.ends_with("virtio-dawn-target-part2"))
     );

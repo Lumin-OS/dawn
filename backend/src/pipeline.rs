@@ -254,6 +254,12 @@ fn step3_format(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, 
                 if !partition.format {
                     continue;
                 }
+                // Formatting an existing filesystem must clear its old signatures;
+                // autodetection can otherwise continue identifying the former type.
+                actions.push(Action::Run(Invocation::new(
+                    "wipefs",
+                    ["--all", &partition.device],
+                )));
                 let mkfs = match partition.role {
                     PartitionRole::Esp => {
                         Invocation::new("mkfs.fat", ["-F32", "-n", "ESP", &partition.device])
@@ -266,11 +272,12 @@ fn step3_format(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, 
                     }
                 };
                 actions.push(Action::Run(mkfs));
+                actions.push(udev_settle());
                 if partition.role == PartitionRole::Root {
                     actions.push(Action::Run(Invocation::new("mkdir", ["-p", TARGET])));
                     actions.push(Action::Run(Invocation::new(
                         "mount",
-                        [partition.device.as_str(), TARGET],
+                        ["-t", "btrfs", partition.device.as_str(), TARGET],
                     )));
                     actions.push(Action::Run(Invocation::new(
                         "btrfs",
@@ -317,7 +324,14 @@ fn step4_mount(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, P
                 Action::Run(Invocation::new("mkdir", ["-p", TARGET])),
                 Action::Run(Invocation::new(
                     "mount",
-                    ["-o", "subvol=@,compress=zstd", &layout.root_device, TARGET],
+                    [
+                        "-t",
+                        "btrfs",
+                        "-o",
+                        "subvol=@,compress=zstd",
+                        &layout.root_device,
+                        TARGET,
+                    ],
                 )),
             ];
             if !partitions.iter().any(|p| p.mount_point == "/home") {
@@ -328,6 +342,8 @@ fn step4_mount(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, P
                 actions.push(Action::Run(Invocation::new(
                     "mount",
                     [
+                        "-t",
+                        "btrfs",
                         "-o",
                         "subvol=@home,compress=zstd",
                         &layout.root_device,
@@ -338,10 +354,19 @@ fn step4_mount(plan: &InstallPlan, layout: &DiskLayout) -> Result<Vec<Action>, P
             for partition in partitions.iter().filter(|p| p.role != PartitionRole::Root) {
                 let target_path = format!("{TARGET}{}", partition.mount_point);
                 actions.push(Action::Run(Invocation::new("mkdir", ["-p", &target_path])));
-                actions.push(Action::Run(Invocation::new(
-                    "mount",
-                    [partition.device.as_str(), target_path.as_str()],
-                )));
+                let mut args = Vec::new();
+                if partition.format {
+                    args.extend([
+                        "-t",
+                        if partition.role == PartitionRole::Esp {
+                            "vfat"
+                        } else {
+                            "btrfs"
+                        },
+                    ]);
+                }
+                args.extend([partition.device.as_str(), target_path.as_str()]);
+                actions.push(Action::Run(Invocation::new("mount", args)));
             }
             Ok(actions)
         }

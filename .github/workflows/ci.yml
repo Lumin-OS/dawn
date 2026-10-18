@@ -105,6 +105,12 @@ jobs:
         run: tests/e2e/run-e2e.sh prepare
       # Each scenario runs even if an earlier one failed, so one run shows
       # every failure.
+      - name: Manual partition reuse online, preserve ESP/home/unassigned partition, then boot
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
+        run: tests/e2e/run-e2e.sh manual-online
+      - name: Manual partition reuse offline, preserve ESP/home/unassigned partition, then boot
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
+        run: tests/e2e/run-e2e.sh manual-offline
       - name: Online install through the GUI, then boot to login
         if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
         run: tests/e2e/run-e2e.sh online
@@ -117,12 +123,6 @@ jobs:
       - name: Secure Boot set up in OVMF Setup Mode, then boot with it enforcing
         if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
         run: tests/e2e/run-e2e.sh secure-boot
-      - name: Manual partition reuse online, preserve ESP/home/unassigned partition, then boot
-        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
-        run: tests/e2e/run-e2e.sh manual-online
-      - name: Manual partition reuse offline, preserve ESP/home/unassigned partition, then boot
-        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
-        run: tests/e2e/run-e2e.sh manual-offline
       - name: Upload the serial console logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4

@@ -4,15 +4,17 @@ lsblk --json -o NAME,SIZE,MODEL,MOUNTPOINT /dev/disk/by-id/virtio-dawn-target
 check the repositories in /etc/pacman.conf are reachable
 ==> Step 2: Partition the disk
 ==> Step 3: Format and create btrfs subvolumes
+wipefs --all /dev/disk/by-id/virtio-dawn-target-part2
 mkfs.btrfs -f -L root /dev/disk/by-id/virtio-dawn-target-part2
+udevadm settle
 mkdir -p /mnt/target
-mount /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
+mount -t btrfs /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
 btrfs subvolume create /mnt/target/@
 btrfs subvolume create /mnt/target/@home
 umount /mnt/target
 ==> Step 4: Mount the target
 mkdir -p /mnt/target
-mount -o subvol=@,compress=zstd /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
+mount -t btrfs -o subvol=@,compress=zstd /dev/disk/by-id/virtio-dawn-target-part2 /mnt/target
 mkdir -p /mnt/target/boot
 mount /dev/disk/by-id/virtio-dawn-target-part1 /mnt/target/boot
 mkdir -p /mnt/target/home

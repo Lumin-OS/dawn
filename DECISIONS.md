@@ -857,3 +857,8 @@ entries say how.
   root, an ext4 home and an unassigned raw partition. Both source modes must
   preserve ESP/home UUIDs and files, the GPT dump and the entire unassigned
   partition hash, then reboot and log in using the installed system.
+- The first seeded ext4-to-btrfs VM run reached formatting but mounted a
+  filesystem on which btrfs subvolume ioctls failed. Manual formatting now
+  clears prior signatures only on explicitly formatted partitions, settles
+  udev, and mounts newly created filesystems with an explicit type. The
+  ext4 seed remains in the acceptance fixture as the regression case.
