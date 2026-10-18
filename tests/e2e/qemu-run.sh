@@ -32,6 +32,7 @@ set -euo pipefail
 find_ovmf() {
   local name="$1"
   for candidate in \
+    "/usr/share/edk2-ovmf/x64/${name}.4m.fd" \
     "/usr/share/edk2/x64/${name}.4m.fd" \
     "/usr/share/OVMF/${name}.fd" \
     "/usr/share/ovmf/x64/${name}.fd"
@@ -48,6 +49,7 @@ find_ovmf() {
 # The Secure Boot build is named differently again.
 find_ovmf_secboot() {
   for candidate in \
+    /usr/share/edk2-ovmf/x64/OVMF_CODE.secboot.4m.fd \
     /usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd \
     /usr/share/OVMF/OVMF_CODE_4M.secboot.fd \
     /usr/share/OVMF/OVMF_CODE.secboot.fd
@@ -140,7 +142,12 @@ cmd_install() {
     memory=4608
   else
     medium=(-cdrom "$iso")
-    memory=2048
+    memory="${DAWN_E2E_MEMORY:-2048}"
+  fi
+
+  local network=(-netdev user,id=net0 -device virtio-net-pci,netdev=net0)
+  if [ "${DAWN_E2E_REAL_ISO:-0}" = 1 ] && [ "$scenario" = offline ]; then
+    network=(-nic none)
   fi
 
   # serial= goes on the virtio-blk device rather than the -drive: current
@@ -154,7 +161,7 @@ cmd_install() {
     -device virtio-blk-pci,drive=target,serial=dawn-target \
     -smbios type=11,value=io.systemd.credential:dawn.scenario="$scenario" \
     -nographic -serial file:"$log" \
-    -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
+    "${network[@]}" \
     &
   wait_for_marker "$timeout" "DAWN-E2E-INSTALL-OK" "$log" $!
 }
@@ -180,7 +187,7 @@ cmd_verify_login() {
     >&2 &
   local qemu_pid=$!
   local status=0
-  python3 "$(dirname "$0")/serial-login.py" "$socket" "$user" "$password" "$timeout" \
+  DAWN_E2E_REAL_ISO="${DAWN_E2E_REAL_ISO:-0}" python3 "$(dirname "$0")/serial-login.py" "$socket" "$user" "$password" "$timeout" \
     || status=$?
   kill "$qemu_pid" 2>/dev/null || true
   wait "$qemu_pid" 2>/dev/null || true

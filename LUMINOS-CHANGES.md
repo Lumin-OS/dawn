@@ -288,3 +288,28 @@ below. The ISO builds once luminos-repository has the meta-packages,
   them along with it. *Done in LuminOS#3, which also moves the VM
   guest, ModemManager, pcscd and time-wait-sync links, root's gpg
   smart-card config and the motd into `luminos-live`.*
+
+## M6 — nightly real ISO installation CI
+
+The ISO repository adds nightly/manual/relevant-PR checks using published
+Dawn and one frozen local mirror for the actual releng profile. Each of
+online, offline (no NIC), and Secure Boot installs must reboot and log in;
+Secure Boot must enforce after enrollment. Existing GUI fixture tests stay
+enabled. Dawn provides the shared QEMU runner and installed-system verifier.
+
+The published database uses replacement signing key
+`547F4761802A0904A0B10E5FAE527343BC3E39B3`; luminos-keyring must ship the
+matching public key. The user's approved keyring rotation is a companion
+change; publication is a user release step. The real-ISO workflow verifies
+the database signature and package hashes before building.
+
+Implementation PRs: [Dawn helpers #12](https://github.com/Lumin-OS/dawn/pull/12),
+[ISO workflow #5](https://github.com/Lumin-OS/LuminOS/pull/5), and
+[keyring rotation #4](https://github.com/Lumin-OS/luminos-packages/pull/4).
+M6 acceptance stays pending until the real-ISO workflow passes all scenarios.
+
+The first real-ISO run found that the host-built `luminos-dawn-0.1.0-1`
+contains native CPU instructions and crashes on the CI CPU. Packaging PR #4
+now builds baseline x86-64, releases 0.1.0-2 and uses the ISO workflow's
+official Arch build/artifact upload for the user's signing step. Publish
+that portable package and luminos-keyring 20261018-1 before final M6 validation.
