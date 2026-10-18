@@ -4,6 +4,27 @@ Log of choices made during implementation where SPEC.md didn't spell out the
 answer, or where a concrete detail had to be picked to make code compile.
 Newest first.
 
+## M6
+
+- **Nightly real-ISO installs belong to Lumin-OS/LuminOS.** Its workflow
+  builds the production profile against one local package snapshot, then
+  installs the published Dawn package headlessly in fresh online, offline
+  and Secure Boot QEMU guests. Offline has no NIC; the installed disk boots
+  without the ISO or a running mirror. Source revisions and package hashes
+  accompany serial logs. Snapshot preparation may download from public Arch
+  mirrors; no guest installs from one. The snapshot is frozen per run,
+  rather than claiming a historical Arch Archive pin.
+- **Keep every-push GUI regression tests.** The existing stand-in ISO tests
+  remain separate from nightly real distribution checks. Shared QEMU tools
+  accept opt-in real-ISO checks, extra memory and network isolation without
+  changing the existing defaults. The verifier also checks the real desktop,
+  keyring, keyboard file and absence of live-only packages and user.
+- **Rotate the repository keyring to the actual publishing key.** The
+  published database verifies with replacement fingerprint
+  `547F4761802A0904A0B10E5FAE527343BC3E39B3`; the M5 keyring still carried
+  the previous key. The user approved updating the keyring sources and
+  preparing a new unsigned package. Signing/publication stays with the user.
+
 ## M5
 
 - **Dependency maintenance advisories remain tracked exceptions.** The

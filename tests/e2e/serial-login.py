@@ -16,6 +16,7 @@ line goes to stdout, for run-e2e.sh.
 Usage: serial-login.py <socket> <user> <password> <timeout-seconds>
 """
 
+import os
 import socket
 import sys
 import time
@@ -31,6 +32,22 @@ COMMAND = (
     f'"$(od -An -tu1 -j4 -N1 /sys/firmware/efi/efivars/SecureBoot-{EFI_GLOBAL} '
     "2>/dev/null | tr -d ' ')\""
 )
+
+
+# The real ISO must leave the desktop and keyring installed, while removing
+# the installer and live-only package even when installed from squashfs.
+if os.environ.get("DAWN_E2E_REAL_ISO") == "1":
+    COMMAND = (
+        "pacman -Q luminos-base luminos-desktop luminos-keyring >/dev/null && "
+        "! pacman -Q luminos-live >/dev/null 2>&1 && "
+        "! pacman -Q luminos-dawn >/dev/null 2>&1 && "
+        "! pacman -Q mkinitcpio-archiso >/dev/null 2>&1 && "
+        "! getent passwd luminos >/dev/null && "
+        "test -s ~/.config/hypr/keyboard.lua && "
+        "systemctl is-enabled greetd.service >/dev/null && "
+        "systemctl is-enabled NetworkManager.service >/dev/null && "
+        + COMMAND
+    )
 
 
 class Console:

@@ -288,3 +288,17 @@ below. The ISO builds once luminos-repository has the meta-packages,
   them along with it. *Done in LuminOS#3, which also moves the VM
   guest, ModemManager, pcscd and time-wait-sync links, root's gpg
   smart-card config and the motd into `luminos-live`.*
+
+## M6 — nightly real ISO installation CI
+
+The ISO repository adds nightly/manual/relevant-PR checks using published
+Dawn and one frozen local mirror for the actual releng profile. Each of
+online, offline (no NIC), and Secure Boot installs must reboot and log in;
+Secure Boot must enforce after enrollment. Existing GUI fixture tests stay
+enabled. Dawn provides the shared QEMU runner and installed-system verifier.
+
+The published database uses replacement signing key
+`547F4761802A0904A0B10E5FAE527343BC3E39B3`; luminos-keyring must ship the
+matching public key. The user's approved keyring rotation is a companion
+change; publication is a user release step. The real-ISO workflow verifies
+the database signature and package hashes before building.
