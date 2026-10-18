@@ -848,7 +848,7 @@ entries say how.
   /home assignment replaces the @home mount. No partition table changes or
   resizing are performed. Re-probe partition ownership and filesystem before
   formatting, through both the CLI and socket entry points.
-- Data reuse initially supports btrfs, ext4, xfs and FAT. Reject system mount
+- Data reuse initially supports btrfs, ext4 and FAT. Reject system mount
   points and nested assignments so reused data cannot supply a symlinked
   ancestor for a later mount outside the freshly formatted root. Reused /home
   needs a POSIX filesystem. Unsupported filesystems and mapped child devices

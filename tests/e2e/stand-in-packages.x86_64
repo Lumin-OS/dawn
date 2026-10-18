@@ -18,6 +18,9 @@ mkinitcpio
 # fsck.btrfs: mkinitcpio's fsck hook needs it for a btrfs root, and
 # step 9's `mkinitcpio -P` fails without it.
 btrfs-progs
+# Match luminos-base: reused ext4 home and FAT ESP need fsck tools at boot.
+e2fsprogs
+dosfstools
 # Step 12 enables their services.
 networkmanager
 greetd

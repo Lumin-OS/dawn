@@ -232,8 +232,7 @@ fn check_assignments(
                 return Err("a reused /home needs a POSIX filesystem, not FAT".into());
             }
             PartitionRole::Other
-                if !a.format
-                    && !["btrfs", "ext4", "xfs", "vfat"].contains(&p.filesystem.as_str()) =>
+                if !a.format && !["btrfs", "ext4", "vfat"].contains(&p.filesystem.as_str()) =>
             {
                 return Err(format!(
                     "{} has an unsupported filesystem for reuse",
