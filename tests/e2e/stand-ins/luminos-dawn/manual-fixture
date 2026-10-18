@@ -11,7 +11,16 @@ disk=/dev/disk/by-id/virtio-dawn-target
 state=/run/dawn-manual-fixture
 mountpoint=/run/dawn-manual-check
 mkdir -p "$state" "$mountpoint"
-trap 'rc=$?; echo "DAWN-E2E-MANUAL-ASSERTION-FAILED line=$LINENO status=$rc"; blkid -p "${disk}-part1" || true; blkid -p "${disk}-part2" || true; blkid -p "${disk}-part3" || true; cat "$state/esp.uuid" "$state/home.uuid" 2>/dev/null || true; exit "$rc"' ERR
+manual_failure() {
+  local status="$1" line="$2"
+  echo "DAWN-E2E-MANUAL-ASSERTION-FAILED line=$line status=$status"
+  blkid -p "${disk}-part1" || true
+  blkid -p "${disk}-part2" || true
+  blkid -p "${disk}-part3" || true
+  cat "$state/esp.uuid" "$state/home.uuid" 2>/dev/null || true
+  exit "$status"
+}
+trap 'manual_failure "$?" "$LINENO"' ERR
 trap 'umount "$mountpoint" 2>/dev/null || true' EXIT
 case "${1:-}" in
   seed)
