@@ -6,6 +6,16 @@ Newest first.
 
 ## M6
 
+- **Release packages target baseline x86-64 and build in official Arch CI.**
+  The first real-ISO offline run booted successfully but the published
+  0.1.0-1 backend died with SIGILL. The developer host's makepkg config
+  supplied `-march=native` and Rust `target-cpu=native`. The recipe now
+  sets portable Rust/C/C++ flags and bumps Dawn to 0.1.0-2; the official
+  Arch smoke workflow uploads unsigned packages for user signing. Fix
+  the shipped binary rather than changing the VM CPU to accommodate it.
+  The online fixture separately waits for NetworkManager and retries
+  refused connections before contacting its local mirror.
+
 - **Nightly real-ISO installs belong to Lumin-OS/LuminOS.** Its workflow
   builds the production profile against one local package snapshot, then
   installs the published Dawn package headlessly in fresh online, offline

@@ -307,3 +307,9 @@ Implementation PRs: [Dawn helpers #12](https://github.com/Lumin-OS/dawn/pull/12)
 [ISO workflow #5](https://github.com/Lumin-OS/LuminOS/pull/5), and
 [keyring rotation #4](https://github.com/Lumin-OS/luminos-packages/pull/4).
 M6 acceptance stays pending until the real-ISO workflow passes all scenarios.
+
+The first real-ISO run found that the host-built `luminos-dawn-0.1.0-1`
+contains native CPU instructions and crashes on the CI CPU. Packaging PR #4
+now builds baseline x86-64, releases 0.1.0-2 and uses the ISO workflow's
+official Arch build/artifact upload for the user's signing step. Publish
+that portable package and luminos-keyring 20261018-1 before final M6 validation.
