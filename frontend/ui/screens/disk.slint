@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { Button, CheckBox, ScrollView } from "std-widgets.slint";
+import { Button, CheckBox, ScrollView, LineEdit } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
+
+export struct PartitionInfo {
+    device: string,
+    description: string,
+    mount-point: string,
+    format: bool,
+    unavailable: bool,
+}
 
 export struct DiskInfo {
     device: string,
@@ -10,6 +18,7 @@ export struct DiskInfo {
     serial: string,
     // Why this disk can't be installed onto; empty if it can.
     unavailable: string,
+    partitions: [PartitionInfo],
 }
 
 // SPEC.md: "Target disk, Erase or Manual mode, Secure Boot setup |
@@ -17,10 +26,10 @@ export struct DiskInfo {
 // checkbox appears only in Setup Mode, checked by default." The backend
 // already left out the live USB and mounted disks; disks too small or
 // otherwise unusable are shown greyed out with the reason. Manual
-// mode's partition-assignment table is M7 scope; the toggle exists
-// here but stays disabled until then.
+// mode assigns existing partitions; it never changes the partition table.
 export component DiskScreen inherits VerticalLayout {
     in property <[DiskInfo]> disks;
+    in-out property <[PartitionInfo]> partitions;
     in-out property <string> selected-device;
     in-out property <string> selected-model;
     in-out property <int> selected-size-gib;
@@ -32,8 +41,8 @@ export component DiskScreen inherits VerticalLayout {
     callback back();
     callback next();
 
-    padding: 32px;
-    spacing: 16px;
+    padding: 20px;
+    spacing: 8px;
 
     Text { text: @tr("Disk"); font-size: 22px; font-weight: 700; }
     Text { text: @tr("Choose the disk to install onto. Erase mode wipes it completely."); wrap: word-wrap; }
@@ -60,6 +69,7 @@ export component DiskScreen inherits VerticalLayout {
                 accessible-enabled: disk.unavailable == "";
                 accessible-action-default => {
                     if disk.unavailable == "" {
+                        partitions = disk.partitions;
                         selected-device = disk.device;
                         selected-model = disk.model;
                         selected-size-gib = disk.size-gib;
@@ -70,6 +80,7 @@ export component DiskScreen inherits VerticalLayout {
                 TouchArea {
                     enabled: disk.unavailable == "";
                     clicked => {
+                        partitions = disk.partitions;
                         selected-device = disk.device;
                         selected-model = disk.model;
                         selected-size-gib = disk.size-gib;
@@ -95,7 +106,35 @@ export component DiskScreen inherits VerticalLayout {
         spacing: 16px;
         Text { text: @tr("Mode:"); vertical-alignment: center; }
         Button { text: @tr("Erase"); primary: mode == "erase"; clicked => { mode = "erase"; } }
-        Button { text: @tr("Manual (coming soon)"); enabled: false; }
+        Button { text: @tr("Manual"); primary: mode == "manual"; clicked => { mode = "manual"; } }
+    }
+
+    if mode == "manual": VerticalLayout {
+        spacing: 6px;
+        Text { text: @tr("Assign /boot to an ESP and / to root. Root will be formatted. Leave mount points empty to preserve unassigned partitions."); wrap: word-wrap; }
+        if partitions.length == 0: Text { text: @tr("No existing partitions found. Manual mode does not create partitions."); }
+        ScrollView {
+            min-height: 140px;
+            VerticalLayout {
+                for partition[i] in partitions: HorizontalLayout {
+                    spacing: 6px;
+                    Text { text: partition.description; wrap: word-wrap; horizontal-stretch: 1; }
+                    LineEdit {
+                        text <=> partition.mount-point;
+                        accessible-label: "Mount point \{partition.device}";
+                        placeholder-text: @tr("Unused");
+                        enabled: !partition.unavailable;
+                        edited => { if self.text == "/" { partition.format = true; } }
+                    }
+                    CheckBox {
+                        text: @tr("Format");
+                        accessible-label: "Format \{partition.device}";
+                        checked <=> partition.format;
+                        enabled: !partition.unavailable && partition.mount-point != "" && partition.mount-point != "/";
+                    }
+                }
+            }
+        }
     }
 
     if is-setup-mode: CheckBox {
@@ -110,7 +149,7 @@ export component DiskScreen inherits VerticalLayout {
         Button {
             text: @tr("Next");
             primary: true;
-            enabled: selected-device != "";
+            enabled: selected-device != "" && (mode == "erase" || partitions.length >= 2);
             clicked => { next(); }
         }
     }

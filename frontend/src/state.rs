@@ -27,6 +27,8 @@ pub struct PlanFields {
     pub network_profile: String,
     pub packages: Vec<String>,
     pub disk_device: String,
+    pub manual: bool,
+    pub partitions: Vec<plan::PartitionAssignment>,
     pub secure_boot_enroll: bool,
     pub full_name: String,
     pub username: String,
@@ -52,15 +54,15 @@ pub fn build_install_plan(fields: &PlanFields) -> InstallPlan {
         packages: fields.packages.clone(),
         network_profile: (!fields.network_profile.is_empty())
             .then(|| fields.network_profile.clone()),
-        // Manual mode needs partition assignments this screen doesn't
-        // collect yet (M7 scope, SPEC.md milestones) — the Disk
-        // screen's Manual toggle stays disabled until then, so Erase
-        // is the only mode a plan built here can ever be.
         disk: Disk {
-            mode: DiskMode::Erase,
+            mode: if fields.manual {
+                DiskMode::Manual
+            } else {
+                DiskMode::Erase
+            },
             device: fields.disk_device.clone(),
             filesystem: Filesystem::Btrfs,
-            partitions: None,
+            partitions: fields.manual.then(|| fields.partitions.clone()),
         },
         secure_boot: SecureBoot {
             enroll: fields.secure_boot_enroll,
@@ -113,6 +115,8 @@ mod tests {
             network_profile: "".into(),
             packages: vec!["luminos-base".into(), "luminos-desktop".into()],
             disk_device: "/dev/disk/by-id/nvme-EXAMPLE_SERIAL".into(),
+            manual: false,
+            partitions: vec![],
             secure_boot_enroll: false,
             full_name: "Ada Lovelace".into(),
             username: "ada".into(),

@@ -20,7 +20,9 @@ Type=oneshot
 # starts through pkexec and the polkit rule, not as this service's root.
 User=luminos
 ImportCredential=dawn.scenario
+ExecStartPre=+/usr/lib/dawn-e2e/manual-fixture seed
 ExecStart=/usr/lib/dawn-e2e/dawn-e2e-driver
+ExecStartPost=+/usr/lib/dawn-e2e/manual-fixture verify
 # Whatever happened. "+": as root, since the live user can't power off
 # while root's live session is also logged in.
 ExecStopPost=+/usr/bin/systemctl poweroff --no-block

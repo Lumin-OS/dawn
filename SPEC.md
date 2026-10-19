@@ -161,6 +161,11 @@ Manual mode rules:
 
 - Per partition, the user picks a mount point and whether to format it.
 - The plan is invalid without exactly one ESP and one root; an existing ESP, for example Windows', can be reused without formatting.
+- Root must be formatted as btrfs in M7; installing over an existing root is not supported.
+- The formatted root uses @ and @home, as in erase mode; a separate /home overrides @home.
+- Data partitions can reuse btrfs, ext4 or FAT filesystems; /home needs a POSIX filesystem. Formatting creates btrfs.
+- Mount points must be canonical absolute paths. System paths and nested partition assignments are rejected.
+- Root must meet `min_disk_gib`; assignments must be distinct direct partitions of the chosen disk.
 - Partitions not assigned are left untouched.
 
 Boot: mkinitcpio builds one UKI per preset (default and fallback) into `/boot/EFI/Linux/`, with the kernel command line from `/etc/kernel/cmdline`. systemd-boot lists UKIs there automatically, so no loader entries are written.

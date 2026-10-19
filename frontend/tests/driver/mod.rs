@@ -175,6 +175,7 @@ pub struct Answers {
     /// The Disk screen's Secure Boot checkbox, where it shows (only in
     /// Setup Mode, as a fresh VM's firmware is).
     pub secure_boot: bool,
+    pub manual: bool,
 }
 
 impl Answers {
@@ -189,6 +190,7 @@ impl Answers {
             password: "correct-horse-battery-staple",
             disk: disk.into(),
             secure_boot: false,
+            manual: false,
         }
     }
 }
@@ -289,6 +291,12 @@ pub async fn fill_to_summary(
             answers.disk,
             app.get_selected_device()
         ));
+    }
+    if answers.manual {
+        click(app, "Manual")?;
+        for (n, mount) in [(1, "/boot"), (2, "/"), (3, "/home")] {
+            type_into(app, &format!("Mount point {}-part{n}", answers.disk), mount)?;
+        }
     }
     // Checked by default in Setup Mode (SPEC.md), so answering "no" means
     // unticking it.

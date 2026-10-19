@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Runs only in the disposable test guest, before/after its manual GUI install.
+set -Eeuo pipefail
+scenario="$(cat "$CREDENTIALS_DIRECTORY/dawn.scenario")"
+case "$scenario" in manual-online|manual-offline) ;; *) exit 0 ;; esac
+# These checks are additional to the service's archiso/credential gates.
+grep -qw archisobasedir=arch /proc/cmdline
+disk=/dev/disk/by-id/virtio-dawn-target
+[ "$(lsblk -dn -o SERIAL "$disk" | xargs)" = dawn-target ]
+state=/run/dawn-manual-fixture
+mountpoint=/run/dawn-manual-check
+mkdir -p "$state" "$mountpoint"
+manual_failure() {
+  local status="$1" line="$2"
+  echo "DAWN-E2E-MANUAL-ASSERTION-FAILED line=$line status=$status"
+  blkid -p "${disk}-part1" || true
+  blkid -p "${disk}-part2" || true
+  blkid -p "${disk}-part3" || true
+  cat "$state/esp.uuid" "$state/home.uuid" 2>/dev/null || true
+  exit "$status"
+}
+trap 'manual_failure "$?" "$LINENO"' ERR
+trap 'umount "$mountpoint" 2>/dev/null || true' EXIT
+case "${1:-}" in
+  seed)
+    # A reusable ESP, an old root, a separate home and an unassigned partition.
+    sfdisk --wipe always "$disk" <<'EOF'
+label: gpt
+size=1GiB, type=uefi, name="existing ESP"
+size=34GiB, type=linux, name="old root"
+size=2GiB, type=linux, name="existing home"
+type=linux, name="unassigned sentinel"
+EOF
+    partprobe "$disk"
+    udevadm settle
+    mkfs.fat -F32 "${disk}-part1"
+    mkfs.ext4 -F "${disk}-part2"
+    mkfs.ext4 -F "${disk}-part3"
+    mount "${disk}-part1" "$mountpoint"
+    mkdir -p "$mountpoint/EFI/Microsoft/Boot"
+    echo 'existing ESP content' > "$mountpoint/EFI/Microsoft/Boot/dawn-sentinel"
+    umount "$mountpoint"
+    mount "${disk}-part2" "$mountpoint"
+    echo 'old root must be erased' > "$mountpoint/old-root-sentinel"
+    umount "$mountpoint"
+    mount "${disk}-part3" "$mountpoint"
+    echo 'existing home content' > "$mountpoint/preserved-home-sentinel"
+    umount "$mountpoint"
+    printf 'unassigned partition must not change\n' | dd of="${disk}-part4" conv=notrunc status=none
+    sync
+    sha256sum "${disk}-part4" > "$state/unassigned.sha256"
+    sfdisk --dump "$disk" > "$state/table"
+    blkid -p -s UUID -o value "${disk}-part1" > "$state/esp.uuid"
+    blkid -p -s UUID -o value "${disk}-part3" > "$state/home.uuid"
+    # Exercise the real CLI refusal boundary before the successful GUI path.
+    python - "$disk" <<'PYTEST'
+import copy, json, pathlib, subprocess, sys
+
+disk = sys.argv[1]
+plan = {
+    "version": 1, "locale": "en_US.UTF-8", "keyboard": {"layout": "us"},
+    "timezone": "Europe/Berlin", "hostname": "fixture", "source": "squashfs",
+    "secure_boot": {"enroll": False, "microsoft_keys": True},
+    "user": {"full_name": "Fixture", "username": "fixture", "password": "fixture-only"},
+    "disk": {"mode": "manual", "device": disk, "filesystem": "btrfs", "partitions": [
+        {"device": disk + "-part1", "mount_point": "/boot", "format": False, "role": "esp"},
+        {"device": disk + "-part2", "mount_point": "/", "format": True, "role": "root"},
+    ]},
+}
+path = pathlib.Path("/run/dawn-manual-fixture/refused-plan.json")
+def refused(candidate, message):
+    path.write_text(json.dumps(candidate))
+    path.chmod(0o600)
+    result = subprocess.run(["dawn-backend", "--target", disk, str(path)], capture_output=True, text=True)
+    assert result.returncode != 0 and message in result.stderr, result.stderr
+    assert not result.stdout, "a rejected plan started executing"
+bad = copy.deepcopy(plan)
+bad["disk"]["partitions"][1]["device"] = disk
+refused(bad, "not a direct partition")
+bad = copy.deepcopy(plan)
+uuid = subprocess.check_output(["blkid", "-s", "PARTUUID", "-o", "value", disk + "-part2"], text=True).strip()
+bad["disk"]["partitions"].append({"device": "/dev/disk/by-partuuid/" + uuid, "mount_point": "/data", "format": True, "role": "other"})
+refused(bad, "multiple aliases")
+path.unlink()
+print("DAWN-E2E-MANUAL-REFUSALS-OK")
+PYTEST
+    echo DAWN-E2E-MANUAL-SEEDED
+    ;;
+  verify)
+    sha256sum --check "$state/unassigned.sha256"
+    sfdisk --dump "$disk" > "$state/table-after"
+    cmp "$state/table" "$state/table-after"
+    [ "$(blkid -p -s UUID -o value "${disk}-part1")" = "$(cat "$state/esp.uuid")" ]
+    [ "$(blkid -p -s UUID -o value "${disk}-part3")" = "$(cat "$state/home.uuid")" ]
+    [ "$(blkid -p -s TYPE -o value "${disk}-part2")" = btrfs ]
+    mount -o ro "${disk}-part1" "$mountpoint"
+    grep -qx 'existing ESP content' "$mountpoint/EFI/Microsoft/Boot/dawn-sentinel"
+    umount "$mountpoint"
+    mount -o ro "${disk}-part3" "$mountpoint"
+    grep -qx 'existing home content' "$mountpoint/preserved-home-sentinel"
+    [ -d "$mountpoint/ada" ]
+    umount "$mountpoint"
+    mount -o ro,subvol=@ "${disk}-part2" "$mountpoint"
+    [ ! -e "$mountpoint/old-root-sentinel" ]
+    cat "$mountpoint/etc/fstab"
+    awk '$2 == "/home" && $3 == "ext4" { found=1 } END { exit !found }' "$mountpoint/etc/fstab"
+    root_uuid="$(blkid -p -s UUID -o value "${disk}-part2")"
+    awk -v uuid="$root_uuid" '$1 == "UUID=" uuid && $2 == "/" && $3 == "btrfs" { found=1 } END { exit !found }' "$mountpoint/etc/fstab"
+    umount "$mountpoint"
+    echo DAWN-E2E-MANUAL-PRESERVED
+    # QEMU waits for this only after every preservation assertion passed.
+    echo DAWN-E2E-INSTALL-OK
+    ;;
+  *) exit 2 ;;
+esac

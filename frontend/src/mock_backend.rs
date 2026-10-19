@@ -88,6 +88,15 @@ impl Backend for MockBackend {
                 serial: "EXAMPLE_SERIAL".to_string(),
                 size_bytes: 512 * GIB,
                 unavailable: None,
+                partitions: (1..=4)
+                    .map(|n| plan::protocol::PartitionInfo {
+                        device: format!("{DISK}-part{n}"),
+                        size_bytes: if n == 1 { GIB } else { 100 * GIB },
+                        filesystem: if n == 1 { "vfat" } else { "btrfs" }.into(),
+                        is_esp: n == 1,
+                        read_only: false,
+                    })
+                    .collect(),
             },
             DiskInfo {
                 device: "/dev/disk/by-id/usb-EXAMPLE_STICK-0:0".to_string(),
@@ -95,6 +104,7 @@ impl Backend for MockBackend {
                 serial: "STICK".to_string(),
                 size_bytes: 16 * GIB,
                 unavailable: Some("is smaller than the 32 GiB an install needs".to_string()),
+                partitions: vec![],
             },
         ])
     }

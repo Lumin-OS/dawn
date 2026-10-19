@@ -356,7 +356,30 @@ fn clickthrough() {
         the_keyboard_screen_switches_the_live_session().await?;
         closing_the_window_mid_install_asks_first().await?;
         an_unavailable_disk_cant_be_picked().await?;
+        manual_assignment_preserves_esp_and_home().await?;
         Ok(())
     })
     .unwrap();
+}
+
+async fn manual_assignment_preserves_esp_and_home() -> Result<(), String> {
+    let backend = Arc::new(MockBackend::new());
+    let app = start(&backend)?;
+    let answers = Answers {
+        manual: true,
+        ..Answers::fixture(mock_backend::DISK)
+    };
+    fill_to_summary(&app, Network::Online, &answers).await?;
+    click(&app, "Install")?;
+    driver::wait_for_screen(&app, driver::DONE, Duration::from_secs(10)).await?;
+    let plans = backend.installs();
+    let p = &plans[0];
+    assert_eq!(p.disk.mode, plan::DiskMode::Manual);
+    let assigned = p.disk.partitions.as_ref().unwrap();
+    assert_eq!(assigned.len(), 3);
+    assert!(!assigned[0].format);
+    assert!(assigned[1].format);
+    assert!(!assigned[2].format);
+    assert_eq!(plan::validate::validate(p), Ok(()));
+    Ok(())
 }

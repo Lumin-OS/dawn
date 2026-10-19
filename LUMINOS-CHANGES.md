@@ -306,10 +306,29 @@ the database signature and package hashes before building.
 Implementation PRs: [Dawn helpers #12](https://github.com/Lumin-OS/dawn/pull/12),
 [ISO workflow #5](https://github.com/Lumin-OS/LuminOS/pull/5), and
 [keyring rotation #4](https://github.com/Lumin-OS/luminos-packages/pull/4).
-M6 acceptance stays pending until the real-ISO workflow passes all scenarios.
+M6 acceptance passed for all three scenarios in [run 39139754081](https://github.com/Lumin-OS/LuminOS/actions/runs/39139754081); all three PRs are merged.
 
 The first real-ISO run found that the host-built `luminos-dawn-0.1.0-1`
 contains native CPU instructions and crashes on the CI CPU. Packaging PR #4
 now builds baseline x86-64, releases 0.1.0-2 and uses the ISO workflow's
-official Arch build/artifact upload for the user's signing step. Publish
-that portable package and luminos-keyring 20261018-1 before final M6 validation.
+official Arch build/artifact upload for the user's signing step. Publishing
+that portable package and luminos-keyring 20261018-1 was completed before final M6 validation.
+
+## M7 — manual partitioning
+
+Dawn assigns existing partitions without repartitioning or resizing. The user
+approved requiring root formatting; ESP and data filesystem reuse remains
+available. Root uses @ and @home; an assigned /home replaces the @home mount.
+CLI and GUI installs re-probe direct partition ownership before destructive
+work, rejecting aliases, read-only/mapped devices and unsupported assignments.
+
+Shipping M7 requires a new pinned luminos-dawn recipe and pkgrel, then the
+user's package signing/publication. The ISO smoke build must consume that
+recipe; existing published-package M6 nightly pins remain unchanged until
+the new package has been published and validated.
+
+M7 review set: [Dawn #13](https://github.com/Lumin-OS/dawn/pull/13),
+[package recipe #5](https://github.com/Lumin-OS/luminos-packages/pull/5), and
+[real ISO smoke pin #6](https://github.com/Lumin-OS/LuminOS/pull/6). Merge in
+that order. The recipe pins the M7 implementation, preserving portable
+baseline x86-64 compilation, and releases luminos-dawn 0.1.0-3.

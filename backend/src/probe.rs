@@ -6,7 +6,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use plan::protocol::DiskInfo;
+use plan::protocol::{DiskInfo, PartitionInfo};
+use plan::{DiskMode, InstallPlan, PartitionRole};
 use serde::Deserialize;
 
 use crate::live::LiveSystem;
@@ -29,7 +30,7 @@ pub fn list_disks(min_disk_gib: u64, live: &LiveSystem) -> Result<Vec<DiskInfo>,
             "--list",
             "--bytes",
             "--output",
-            "NAME,PKNAME,PATH,TYPE,SIZE,MODEL,SERIAL,RO,MOUNTPOINTS",
+            "NAME,PKNAME,PATH,TYPE,SIZE,MODEL,SERIAL,RO,MOUNTPOINTS,FSTYPE,PARTTYPE,PARTUUID",
         ],
     ))
     .map_err(|err| err.to_string())?;
@@ -59,6 +60,12 @@ struct BlockDevice {
     ro: bool,
     #[serde(default)]
     mountpoints: Vec<Option<String>>,
+    #[serde(default)]
+    fstype: Option<String>,
+    #[serde(default)]
+    parttype: Option<String>,
+    #[serde(default)]
+    partuuid: Option<String>,
 }
 
 /// `lsblk --json --list` output, `/dev/disk/by-id/` names keyed by the
@@ -126,14 +133,120 @@ fn disks_from_lsblk(
             serial: clean(&device.serial),
             size_bytes: device.size,
             unavailable,
+            partitions: lsblk
+                .blockdevices
+                .iter()
+                .filter(|p| {
+                    p.kind == "part"
+                        && (p.pkname.as_deref() == Some(device.name.as_str())
+                            || p.pkname.as_deref() == Some(device.path.as_str()))
+                })
+                .filter_map(|p| {
+                    let stable = by_id
+                        .get(&p.path)
+                        .map(|id| format!("/dev/disk/by-id/{id}"))
+                        .or_else(|| {
+                            p.partuuid
+                                .as_ref()
+                                .map(|id| format!("/dev/disk/by-partuuid/{id}"))
+                        })?;
+                    Some(PartitionInfo {
+                        device: stable,
+                        size_bytes: p.size,
+                        filesystem: p.fstype.clone().unwrap_or_default(),
+                        is_esp: p.parttype.as_deref().is_some_and(|s| {
+                            s.eq_ignore_ascii_case("c12a7328-f81f-11d2-ba4b-00a0c93ec93b")
+                        }),
+                        read_only: p.ro
+                            || lsblk.blockdevices.iter().any(|child| {
+                                child.pkname.as_deref() == Some(p.name.as_str())
+                                    || child.pkname.as_deref() == Some(p.path.as_str())
+                            }),
+                    })
+                })
+                .collect(),
         });
     }
     disks.sort_by(|a, b| a.device.cmp(&b.device));
     Ok(disks)
 }
 
-/// `/dev/disk/by-id/` names by the whole-disk device they point at, one
-/// per disk. Partitions are left out.
+/// Refuse cross-disk, aliased, unsupported or undersized assignments before any writes.
+pub fn validate_manual(plan: &InstallPlan, min_gib: u64, live: &LiveSystem) -> Result<(), String> {
+    if plan.disk.mode != DiskMode::Manual {
+        return Ok(());
+    }
+    let disks = list_disks(min_gib, live)?;
+    let disk = disks
+        .iter()
+        .find(|d| d.device == plan.disk.device)
+        .ok_or("manual target is not an available disk")?;
+    if let Some(reason) = &disk.unavailable {
+        return Err(reason.clone());
+    }
+    let mut assignments = plan.disk.partitions.clone().unwrap_or_default();
+    let mut seen = HashSet::new();
+    for a in &mut assignments {
+        let resolved =
+            std::fs::canonicalize(&a.device).map_err(|e| format!("{}: {e}", a.device))?;
+        if !seen.insert(resolved.clone()) {
+            return Err("one partition is assigned through multiple aliases".into());
+        }
+        a.device = disk
+            .partitions
+            .iter()
+            .find(|p| std::fs::canonicalize(&p.device).ok().as_ref() == Some(&resolved))
+            .ok_or_else(|| format!("{} is not a direct partition of the target disk", a.device))?
+            .device
+            .clone();
+    }
+    check_assignments(&assignments, &disk.partitions, min_gib)
+}
+
+fn check_assignments(
+    assignments: &[plan::PartitionAssignment],
+    partitions: &[PartitionInfo],
+    min_gib: u64,
+) -> Result<(), String> {
+    for a in assignments {
+        let p = partitions
+            .iter()
+            .find(|p| p.device == a.device)
+            .ok_or("assigned partition is not on the target disk")?;
+        if p.read_only {
+            return Err(format!(
+                "{} is read-only or has mapped child devices",
+                p.device
+            ));
+        }
+        match a.role {
+            PartitionRole::Root if p.size_bytes < min_gib.saturating_mul(GIB) => {
+                return Err(format!("root needs at least {min_gib} GiB"));
+            }
+            PartitionRole::Esp if !p.is_esp || !a.format && p.filesystem != "vfat" => {
+                return Err("ESP must have the GPT EFI type and FAT filesystem when reused".into());
+            }
+            PartitionRole::Other
+                if !a.format && a.mount_point == "/home" && p.filesystem == "vfat" =>
+            {
+                return Err("a reused /home needs a POSIX filesystem, not FAT".into());
+            }
+            PartitionRole::Other
+                if !a.format && !["btrfs", "ext4", "vfat"].contains(&p.filesystem.as_str()) =>
+            {
+                return Err(format!(
+                    "{} has an unsupported filesystem for reuse",
+                    p.device
+                ));
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// Preferred `/dev/disk/by-id/` names keyed by their resolved block device,
+/// including partitions for manual assignments.
 fn by_id_links() -> HashMap<String, String> {
     let mut candidates: HashMap<String, Vec<String>> = HashMap::new();
     let Ok(entries) = std::fs::read_dir("/dev/disk/by-id") else {
@@ -143,9 +256,6 @@ fn by_id_links() -> HashMap<String, String> {
         let Some(name) = entry.file_name().to_str().map(str::to_string) else {
             continue;
         };
-        if name.contains("-part") {
-            continue;
-        }
         if let Ok(target) = std::fs::canonicalize(entry.path()) {
             candidates
                 .entry(target.to_string_lossy().into_owned())
@@ -303,6 +413,97 @@ mod tests {
         assert_eq!(
             preferred_link(&only_wwn).as_deref(),
             Some("wwn-0x5000c500e5a1b2c3")
+        );
+    }
+
+    #[test]
+    fn assignments_refuse_foreign_readonly_small_and_incompatible_partitions() {
+        let root = plan::PartitionAssignment {
+            device: "/dev/disk/by-id/virtio-dawn-target-part2".into(),
+            mount_point: "/".into(),
+            format: true,
+            role: PartitionRole::Root,
+        };
+        let p = PartitionInfo {
+            device: root.device.clone(),
+            size_bytes: 34 * GIB,
+            filesystem: "ext4".into(),
+            is_esp: false,
+            read_only: false,
+        };
+        assert!(
+            check_assignments(std::slice::from_ref(&root), std::slice::from_ref(&p), 32).is_ok()
+        );
+        assert!(check_assignments(std::slice::from_ref(&root), &[], 32).is_err());
+        assert!(
+            check_assignments(
+                std::slice::from_ref(&root),
+                &[PartitionInfo {
+                    read_only: true,
+                    ..p.clone()
+                }],
+                32
+            )
+            .is_err()
+        );
+        assert!(
+            check_assignments(
+                &[root],
+                &[PartitionInfo {
+                    size_bytes: GIB,
+                    ..p.clone()
+                }],
+                32
+            )
+            .is_err()
+        );
+        let esp = plan::PartitionAssignment {
+            device: p.device.clone(),
+            mount_point: "/boot".into(),
+            format: false,
+            role: PartitionRole::Esp,
+        };
+        assert!(
+            check_assignments(std::slice::from_ref(&esp), std::slice::from_ref(&p), 32).is_err()
+        );
+        assert!(
+            check_assignments(
+                std::slice::from_ref(&esp),
+                &[PartitionInfo {
+                    is_esp: true,
+                    ..p.clone()
+                }],
+                32
+            )
+            .is_err()
+        );
+        assert!(
+            check_assignments(
+                &[esp],
+                &[PartitionInfo {
+                    is_esp: true,
+                    filesystem: "vfat".into(),
+                    ..p
+                }],
+                32
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn disk_probe_only_lists_direct_partitions_with_stable_ids() {
+        let json = r#"{"blockdevices":[
+            {"name":"vda","path":"/dev/vda","pkname":null,"type":"disk","size":42949672960,"model":null,"serial":null,"ro":false},
+            {"name":"vda1","path":"/dev/vda1","pkname":"vda","type":"part","size":1073741824,"model":null,"serial":null,"ro":false,"fstype":"vfat","parttype":"c12a7328-f81f-11d2-ba4b-00a0c93ec93b","partuuid":"test-esp"},
+            {"name":"vdb1","path":"/dev/vdb1","pkname":"vdb","type":"part","size":1073741824,"model":null,"serial":null,"ro":false,"partuuid":"foreign"}
+        ]}"#;
+        let disks = disks_from_lsblk(json, &by_id(), &[], 32).unwrap();
+        assert_eq!(disks[0].partitions.len(), 1);
+        assert!(disks[0].partitions[0].is_esp);
+        assert_eq!(
+            disks[0].partitions[0].device,
+            "/dev/disk/by-partuuid/test-esp"
         );
     }
 
